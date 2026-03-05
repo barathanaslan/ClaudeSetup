@@ -1,6 +1,6 @@
 ---
 name: ml-training
-description: ML training best practices. Use when writing training loops, model training scripts, fine-tuning code, or any code that trains a model (PyTorch, MLX, sklearn, etc.). TRIGGER on training-related code.
+description: ML training best practices. Use when writing training loops, model training scripts, fine-tuning code, or any code that trains a model. TRIGGER when the user mentions training, fine-tuning, epochs, learning rate, loss curves, model convergence, overfitting, batch size, or wants to train anything with PyTorch, MLX, sklearn, or similar. Also trigger on code that contains training loops, optimizer steps, or loss computation.
 user-invocable: false
 ---
 
@@ -8,15 +8,15 @@ user-invocable: false
 
 These rules apply to ALL training code — deep learning, classical ML, fine-tuning, anything that trains a model.
 
-## 1. Checkpointing (Non-Negotiable)
+## 1. Checkpointing
 
-ALWAYS save model weights. No exceptions.
+Training runs crash, machines lose power, and hours of compute vanish without checkpoints. Save model weights so the user never loses progress.
 
 - **Best model**: Save whenever the tracked metric improves
 - **Periodic**: For long training runs (>1 hour estimated), also save every N epochs as fallback
 - **What to save**: Model state dict, optimizer state, epoch number, best metric value, and training config
 - **Where**: `checkpoints/` directory, with clear naming (e.g., `best_model.pt`, `checkpoint_epoch_010.pt`)
-- **Ask yourself**: "If this crashes at epoch 47 of 50, will the user lose everything?" If yes, add checkpointing.
+- **Gut check**: "If this crashes at epoch 47 of 50, will the user lose everything?" If yes, add checkpointing.
 
 ```python
 # Minimum viable checkpoint
@@ -30,7 +30,7 @@ torch.save({
 
 ## 2. Early Stopping
 
-ALWAYS implement early stopping unless the user explicitly says not to.
+Without early stopping, training wastes compute on overfit epochs and the user has to manually watch for convergence. Implement it by default — the user can disable it if they want.
 
 - Track the validation metric (not train loss)
 - Default patience: 10 epochs (adjust based on training length)
@@ -39,10 +39,10 @@ ALWAYS implement early stopping unless the user explicitly says not to.
 
 ## 3. Metrics & Logging
 
-### What to Log (EVERY epoch)
+### What to Log (every epoch)
 - Train loss
 - Validation loss
-- ALL relevant metrics on validation set:
+- All relevant metrics on validation set — loss alone tells you the model is learning but not whether it's solving the actual task:
   - If a custom/official metric exists for the project → use it (check docs/, competition page, paper)
   - If classification → accuracy, F1, precision, recall
   - If regression → MSE, MAE, R2

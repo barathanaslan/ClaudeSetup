@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: Architect-delegate workflow pattern. Apply when the user is discussing goals, creating plans, or when a plan is ready for implementation. This is background knowledge about how the user works.
+description: Architect-delegate workflow pattern. Apply when the user is discussing goals, creating plans, or when a plan is ready for implementation. TRIGGER when the user says "implement this", "go ahead", "looks good, do it", "delegate this", "spawn a worker", "break this into tasks", "let's plan this out", or confirms a plan. Also trigger when you have a multi-step implementation ready. This is background knowledge about how the user works.
 user-invocable: false
 ---
 
@@ -120,8 +120,8 @@ Agent tool call:
 - Each agent gets its own fresh context window — put everything it needs in the prompt + referenced files
 
 ## Critical Rules
-- NEVER implement multi-step plans in this conversation. Always delegate.
-- Plans must be written to files, not just discussed verbally.
-- Worker agents are disposable — they have fresh context each time. Put everything they need in the plan + docs/.
+- Multi-step plans are delegated to background agents because the main conversation should stay responsive and strategic — the architect doesn't lay bricks. Don't implement plans in this conversation.
+- Plans must be written to files so worker agents (which have fresh context and no memory of this conversation) can read them independently.
+- Worker agents are disposable — put everything they need in the plan + docs/.
 - If a plan is too large for one agent, break it into sequential sub-plans.
-- After every plan cycle, update docs/ to capture what changed.
+- After every plan cycle, update docs/ to capture what changed — this is the shared memory that survives across sessions.

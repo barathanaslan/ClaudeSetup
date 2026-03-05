@@ -7,7 +7,7 @@ user-invocable: false
 # Apple Silicon ML (MPS & MLX)
 
 The user runs ALL workloads on Apple Silicon. Never assume CUDA.
-All APIs below verified on PyTorch 2.9.1 + MLX 0.29.3 (March 2026).
+APIs below verified on PyTorch 2.9.1 + MLX 0.29.3 (March 2026). If you hit unexpected errors, web-search for updated docs — these libraries evolve fast.
 
 ## Device Selection (PyTorch)
 
@@ -82,10 +82,10 @@ torch.mps.synchronize()  # Wait for all MPS ops to complete
 
 ## MPS Operation Fallback
 
-Some ops aren't supported. Enable global fallback BEFORE importing torch:
+Some ops aren't supported on MPS. Enable global fallback before importing torch — the env var must be set before PyTorch initializes the Metal backend, otherwise it has no effect:
 ```python
 import os
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # Must precede `import torch`
 ```
 
 Known unsupported: `torchvision::roi_align` (use YOLO/DETR not RCNN), some scatter/gather ops.
@@ -179,57 +179,16 @@ save_safetensors(str(path / "model.safetensors"), weights)
 - No `.to(device)` needed — everything auto-runs on Apple Silicon
 - Gradient clipping: `from mlx.optimizers import clip_grad_norm`
 
-## Performance Profiling Template
 ## Auto Batch Size Tuning
 
-On Apple Silicon, larger batch sizes are NOT always faster (unlike CUDA). Always measure.
-A working batch tuner is available at: `~/Projects/ClaudeSetup/research/batch_tuner.py`
+On Apple Silicon, larger batch sizes are NOT always faster — MPS throughput often peaks at surprisingly small sizes (16-32) and then decreases. Always measure rather than guessing.
 
-### Key Pattern
-```python
-import gc, time, torch, psutil
+Key principles:
+- Use `driver_allocated_memory()` for budget decisions (not `current_allocated_memory()`)
+- Clean up between trials: `gc.collect()` + `torch.mps.empty_cache()`
+- Set a memory budget as fraction of available system memory
 
-def find_optimal_batch_size(model, input_shape, device, budget_fraction=0.35, max_gb=30):
-    """Binary-search for fastest batch size within memory budget."""
-    avail = psutil.virtual_memory().available
-    budget = min(int(avail * budget_fraction), int(max_gb * 1024**3))
-
-    best_bs, best_throughput = 1, 0
-    for bs in [4, 8, 16, 32, 64, 128, 256, 512]:
-        gc.collect(); torch.mps.empty_cache(); torch.mps.synchronize()
-        try:
-            x = torch.randn(bs, *input_shape, device=device)
-            t = torch.randint(0, 10, (bs,), device=device)
-            opt = torch.optim.SGD(model.parameters(), lr=0.01)
-            # Warmup
-            opt.zero_grad(); loss = torch.nn.functional.cross_entropy(model(x), t)
-            loss.backward(); opt.step(); torch.mps.synchronize()
-            # Timed
-            t0 = time.perf_counter()
-            for _ in range(3):
-                opt.zero_grad(); loss = torch.nn.functional.cross_entropy(model(x), t)
-                loss.backward(); opt.step(); torch.mps.synchronize()
-            elapsed = time.perf_counter() - t0
-
-            mem = torch.mps.driver_allocated_memory()  # Real memory cost
-            throughput = (bs * 3) / elapsed
-
-            if mem <= budget and throughput > best_throughput:
-                best_bs, best_throughput = bs, throughput
-            if mem > budget:
-                break
-            del x, t, opt
-        except RuntimeError:
-            break
-
-    return best_bs
-```
-
-### Why This Matters
-- MPS throughput often peaks at surprisingly small batch sizes (16-32)
-- Larger batches just waste memory without speed gain
-- Use `driver_allocated_memory()` not `current_allocated_memory()` for budgeting
-- Always `gc.collect() + torch.mps.empty_cache()` between trials
+See [references/apple-ml-recipes.md](references/apple-ml-recipes.md) for the full batch tuner implementation and profiling template. A working script is also at `~/Projects/ClaudeSetup/research/batch_tuner.py`.
 
 ## Reference Links (web search these when issues arise)
 
@@ -244,26 +203,3 @@ def find_optimal_batch_size(model, input_shape, device, budget_fraction=0.35, ma
 When hitting MPS errors, search: `site:github.com/pytorch/pytorch <error message>`
 When hitting MLX errors, search: `site:github.com/ml-explore/mlx <error message>`
 
-## Performance Profiling Template
-```python
-import time
-
-# Data loading speed
-t0 = time.time()
-for i, batch in enumerate(train_loader):
-    if i >= 10: break
-print(f"Data: {(time.time()-t0)/10:.3f}s/batch")
-
-# Training step speed (must synchronize for accurate timing)
-x, y = next(iter(train_loader))
-x, y = x.to(device), y.to(device)
-t0 = time.time()
-loss = criterion(model(x), y)
-loss.backward()
-optimizer.step()
-if device.type == "mps":
-    torch.mps.synchronize()
-dt = time.time() - t0
-est_epoch = dt * len(train_loader) / 60
-print(f"Train step: {dt:.3f}s | Est. epoch: {est_epoch:.1f}min")
-```

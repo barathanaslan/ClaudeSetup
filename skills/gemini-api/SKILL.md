@@ -8,11 +8,11 @@ user-invocable: false
 
 ## Critical Rules
 
-### 1. NEVER Override the User's Model Choice
-If the user says "Gemini 3.0 Flash", use exactly that string. Do NOT substitute with a model you know. Your training data is outdated — the user knows which models exist NOW.
+### 1. The User's Model Choice is Authoritative
+Your training data is outdated — the user knows which models exist now. If the user says "Gemini 3.0 Flash", use exactly that string. Don't substitute with a model you're more familiar with.
 
-### 2. NEVER Assume API Patterns From Memory
-The `google-genai` library changes frequently. Before writing ANY Gemini code:
+### 2. Web Search Before Writing Gemini Code
+The `google-genai` library changes frequently and your knowledge of it is likely stale. Before writing any Gemini code:
 - **Web search** for current API documentation
 - Search: `google genai python <feature> site:googleapis.github.io` or `site:ai.google.dev`
 - Verify exact import paths, class names, method signatures

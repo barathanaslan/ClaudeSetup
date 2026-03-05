@@ -1,6 +1,6 @@
 ---
 name: project-docs
-description: Project documentation pattern using docs/ folder. Apply when starting work on any project, when docs/ doesn't exist, or when project state needs to be captured. This is background knowledge.
+description: Project documentation pattern using docs/ folder. Apply when starting work on any project, when docs/ doesn't exist, when the user returns after a break, or when project state needs to be captured. TRIGGER when the user says "what's the status", "bring me up to speed", "I'm picking this back up", "create docs", "update the progress", "where were we", or starts a new session on an existing project. This is background knowledge.
 user-invocable: false
 ---
 
