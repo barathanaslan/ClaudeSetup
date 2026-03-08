@@ -18,15 +18,15 @@ Every project must have a `docs/` folder that serves as persistent memory for bo
 
 ```
 docs/
-  overview.md        # What this project is, architecture, how the code works
-  progress.md        # What's been done, decisions made, mistakes and fixes, known issues
-  roadmap.md         # Where we're going: goals, todo list, priorities
-  plans/             # Individual plan files for the architect-delegate workflow
+  overview.md    # What this project is, architecture, constraints. Updated rarely.
+  status.md      # Current snapshot: what's done, in progress, next, blocked. Overwritten each update.
+  plans/         # Individual plan files for the architect-delegate workflow
     plan-001-*.md
     plan-002-*.md
+  notes/         # Optional. Research, references, scratch. Only created when needed.
 ```
 
-The file names above are suggestions. Adapt to the project — a small script doesn't need all of these. The principle matters more than the structure.
+Two files and one working directory. A small script may only need `overview.md`. The principle matters more than the structure.
 
 ## Content Guidelines
 
@@ -36,32 +36,35 @@ The file names above are suggestions. Adapt to the project — a small script do
 - How to run/build/test
 - Key dependencies and why they were chosen
 - NOT a copy of the code — describe how it works at a level that helps you navigate
+- Updated rarely — only when architecture or goals fundamentally change
 
-### progress.md
-- Reverse chronological (newest first)
-- Each entry: date, what changed, why
-- Include mistakes made and how they were fixed — this prevents repeating them
-- Known issues and workarounds
-- Keep entries concise — one line per change is fine for small things
+### status.md
+- **Always reflects current state** — update in place, don't append history
+- Must fit on one screen (under ~40 lines)
+- Sections: Done (completed milestones), In Progress, Next (priorities), Blocked/Known Issues
+- When something changes, update the relevant section — no need to rewrite the whole file
+- History lives in git and plan files — status.md only reflects *right now*
 
-### roadmap.md
-- The end goal described in detail
-- Current priorities (ordered)
-- Todo items with rough scope indicators
-- Ideas/possibilities that aren't committed yet (separate section)
-- Update this as goals evolve — it's a living document
+### notes/ (optional)
+- Only create when there's something worth saving: research findings, external references, debugging notes
+- No placeholder files — if the directory is empty, don't create it
 
 ## When to Update
-- After implementing a plan: update progress.md and roadmap.md
-- After discovering a bug or issue: add to progress.md known issues
-- After goals change: update roadmap.md
-- After significant architectural decisions: update overview.md
+- **status.md**: Only the architect (main conversation) updates this. Not worker agents. Update the relevant sections after a plan cycle completes — not after every small change.
+- **overview.md**: After significant architectural decisions. Rare.
 - Don't update on every tiny change — use judgment
 
 ## When to Read
 - At the start of every new session
 - Before creating a plan (to understand current state)
 - Before any worker agent starts (part of its context)
+
+## Migrating Old Structure
+If a project has the old structure (progress.md, roadmap.md), consolidate them into status.md:
+1. Extract current state from progress.md (recent entries, known issues) and roadmap.md (priorities, next steps)
+2. Write a single status.md snapshot
+3. Delete progress.md and roadmap.md
+4. Git history preserves the old content
 
 ## Conciseness
 - These docs are read by Claude instances with limited context. Every word must earn its place.

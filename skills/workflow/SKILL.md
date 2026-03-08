@@ -36,15 +36,14 @@ Agent tool call:
     You are an expert implementation engineer. Your job is to execute a plan precisely.
 
     PLAN: Read the plan at docs/plans/plan-NNN-<name>.md
-    CONTEXT: Read docs/ folder (overview.md, progress.md, roadmap.md) first.
+    CONTEXT: Read docs/ folder (overview.md, status.md) first.
 
     Process:
     1. Read context and plan fully before writing any code
     2. Implement each step in order — no placeholders, no TODOs
     3. Run/test the code if possible
-    4. Update docs/progress.md with what you did
-    5. Update docs/roadmap.md if tasks were completed
-    6. Report: what was done, any issues, any deviations from plan
+    4. Do NOT update docs/status.md — the architect handles that
+    5. Report: what was done, any issues, any deviations from plan
 
     Rules:
     - Do NOT ask questions — make reasonable decisions
@@ -66,7 +65,7 @@ Agent tool call:
     You are an expert code reviewer. Verify the implementation against its plan.
 
     PLAN: Read docs/plans/plan-NNN-<name>.md
-    CONTEXT: Read docs/ folder.
+    CONTEXT: Read docs/ folder (overview.md, status.md).
 
     Check:
     1. Every plan step — was it done?
@@ -74,7 +73,7 @@ Agent tool call:
     3. Code correctness — bugs, logic errors, edge cases
     4. For ML code: checkpoints saved? Metrics logged? Early stopping?
     5. Does it work on Apple Silicon (MPS, not CUDA)?
-    6. Were docs/ updated?
+    6. Did the worker avoid modifying docs/status.md? (architect handles that)
 
     Return: PASS / PASS WITH NOTES / FAIL, with specific issues and file:line references.
     Do NOT modify any code — read-only review.
@@ -84,7 +83,7 @@ Agent tool call:
 
 ### 4. Update & Continue
 - Confirm completion to the user with a brief summary
-- Ensure docs/ reflects the current state
+- Update `docs/status.md` to reflect current state — only the architect does this, after reviewing worker results
 - Move to the next plan
 
 ## Plan File Format
@@ -124,4 +123,4 @@ Agent tool call:
 - Plans must be written to files so worker agents (which have fresh context and no memory of this conversation) can read them independently.
 - Worker agents are disposable — put everything they need in the plan + docs/.
 - If a plan is too large for one agent, break it into sequential sub-plans.
-- After every plan cycle, update docs/ to capture what changed — this is the shared memory that survives across sessions.
+- After every plan cycle, update docs/status.md to reflect what changed — this is the shared memory that survives across sessions.
