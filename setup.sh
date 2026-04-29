@@ -55,6 +55,10 @@ link_item() {
 echo "Setting up CLAUDE.md..."
 link_item "$SCRIPT_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 
+# --- settings.json ---
+echo "Setting up settings.json..."
+link_item "$SCRIPT_DIR/settings.json" "$CLAUDE_DIR/settings.json"
+
 # --- Skills ---
 echo "Setting up skills..."
 mkdir -p "$CLAUDE_DIR/skills"
@@ -62,16 +66,6 @@ for skill_dir in "$SCRIPT_DIR/skills"/*/; do
     if [ -d "$skill_dir" ]; then
         skill_name="$(basename "$skill_dir")"
         link_item "$skill_dir" "$CLAUDE_DIR/skills/$skill_name"
-    fi
-done
-
-# --- Agents ---
-echo "Setting up agents..."
-mkdir -p "$CLAUDE_DIR/agents"
-for agent_file in "$SCRIPT_DIR/agents"/*.md; do
-    if [ -f "$agent_file" ]; then
-        agent_name="$(basename "$agent_file")"
-        link_item "$agent_file" "$CLAUDE_DIR/agents/$agent_name"
     fi
 done
 
@@ -88,8 +82,8 @@ done
 echo ""
 echo "Done. Installed:"
 echo "  - CLAUDE.md (global)"
+echo "  - settings.json (global)"
 echo "  - $(ls -d "$SCRIPT_DIR/skills"/*/ 2>/dev/null | wc -l | tr -d ' ') skills"
-echo "  - $(ls "$SCRIPT_DIR/agents"/*.md 2>/dev/null | wc -l | tr -d ' ') agents"
 echo "  - $(ls "$SCRIPT_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ') commands"
 echo ""
 if [ -d "$BACKUP_DIR" ]; then
