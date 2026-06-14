@@ -21,8 +21,7 @@ Core preferences: architect-delegate working style, Apple Silicon environment, d
 Permissions default mode, theme, effort level, thinking toggle.
 
 ### Skills (auto-triggered background knowledge)
-- **workflow** — Architect-delegate pattern: plan in conversation, delegate implementation to background `general-purpose` agents
-- **project-docs** — Persistent `docs/` folder for project memory across sessions
+- **workflow** — How the user works: architect-delegate pattern (delegate big work, do small work inline) plus the `docs/` folder for persistent project memory
 - **skill-creator** — Create, modify, and benchmark skills
 - **gemini-api** — Gemini API rules: model names, web-search before coding
 - **ml-training** — Training standards: checkpoints, early stopping, metrics, logging
