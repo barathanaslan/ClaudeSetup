@@ -3,6 +3,9 @@
     "defaultMode": "auto"
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "medium",
-  "theme": "dark-ansi"
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark-ansi",
+  "skipAutoPermissionPrompt": true
 }

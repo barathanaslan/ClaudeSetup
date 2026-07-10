@@ -84,7 +84,66 @@ with open('logs/metrics.csv', 'w', newline='') as f:
 - NEVER evaluate on training data and present it as results
 - If a custom metric exists, compute it on the validation set during training and test set only at the very end
 
-## 6. For Large/Long Training
+## 6. Performance — No Wasted Compute
+
+Training speed matters. Days of compute are lost to avoidable bottlenecks. Profile BEFORE training, not after 30 hours of regret.
+
+### NEVER use Python loops over batch/sequence dimensions
+
+This is the #1 training speed killer. A nested loop over `batch_size × seq_len` that calls `.item()` on every iteration forces GPU sync 2,048 times per batch and turns a 1ms operation into 768ms. **Every operation inside a training step must be vectorized.**
+
+```python
+# WRONG — 768ms per batch (Python loops + .item() GPU syncs)
+total_loss = 0
+for b in range(batch_size):
+    for w in range(max_wp):
+        idx = indices[b, w].item()  # forces GPU sync!
+        if idx < 0: continue
+        total_loss += (pred[b, idx] - target[b, w]) ** 2
+
+# RIGHT — 47ms per batch (fully vectorized, 16x faster)
+valid_mask = indices >= 0
+safe_idx = indices.clamp(min=0)
+pred_at_wp = torch.gather(pred, 1, safe_idx.unsqueeze(-1).expand(-1, -1, 3))
+diff_sq = (pred_at_wp - target) ** 2
+loss = (diff_sq * valid_mask.unsqueeze(-1)).sum() / valid_mask.sum().clamp(min=1)
+```
+
+**Gut check**: Search for `for b in range(batch` or `.item()` inside loss functions and training loops. If found, vectorize immediately.
+
+### Profile the training step BEFORE long runs
+
+Before starting any training run >1 hour, profile one training step:
+- Time each phase: data loading, forward, loss, backward, optimizer
+- Identify which phase dominates
+- A 1.2M parameter model should NOT take 800ms per batch — if it does, something is wrong
+
+```python
+torch.mps.synchronize()  # or torch.cuda.synchronize()
+t0 = time.time()
+# ... operation ...
+torch.mps.synchronize()
+print(f"Operation: {(time.time()-t0)*1000:.1f}ms")
+```
+
+### Data loading bottlenecks
+
+If data loading is the bottleneck (>50% of step time):
+- **Pre-compute expensive transforms**: If `__getitem__` does heavy CPU work (interpolation, feature extraction), pre-compute and cache to disk. This can give 100-400x speedup on data loading.
+- **Increase batch size**: If GPU memory allows, larger batches mean fewer data loading calls per epoch.
+- **`num_workers>0`**: Use multiprocessing workers for data loading — BUT test first, as it can be slower with large cached datasets due to fork/serialization overhead.
+- **Pre-cache with multiprocessing**: Generate all samples once using a process pool, save to disk, load as a flat dataset during training.
+
+### Tensor operations checklist
+
+Before running training, verify:
+- No `.item()` calls inside the training loop (except for logging at end of epoch)
+- No Python `for` loops over batch, sequence, or feature dimensions
+- No repeated `.to(device)` calls on the same tensor
+- Loss functions operate on full tensors, not element-by-element
+- Custom metrics computed with vectorized ops, not loops
+
+## 7. For Large/Long Training
 - Estimate training time before starting (print it)
 - Save checkpoints more frequently
 - Consider gradient accumulation if batch size is limited by memory
