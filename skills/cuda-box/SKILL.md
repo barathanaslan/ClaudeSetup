@@ -34,7 +34,21 @@ so prefer `cuda run`. Full docs: `~/bin/CUDA-README.md`.
 4. HuggingFace cache is shared at WSL `~/.cache/huggingface` (~34G) — models are probably
    already there; check before downloading.
 5. Long runs: launch with `nohup ... &` inside `cuda run`, poll with `cuda run 'tail ...'`.
-6. When done AND the user agrees the box can go down: `cuda off`.
+6. When done: **leave the box on** and tell the user it's running. See Power policy.
+
+## Power policy (the owner was explicit about this — 2026-07-10)
+
+- `cuda on` freely: waking is cheap and harmless.
+- `cuda off` is **never agent-initiated**. Shut down only when the user explicitly asks in
+  the current conversation, or pre-authorized "turn it off when the job finishes" for this
+  specific task. An idle-looking box may still be in use — a desktop session, a download,
+  a job between epochs. When in doubt, leave it on.
+- If you woke the box for your own task, the default after finishing is ON + inform the
+  user — never "clean up" by powering it down.
+- Don't power-cycle as a testing convenience. On/off churn wears the hardware and annoys
+  the owner; batch your work while it's up.
+- The `cuda off` guard refuses on GPU load, WSL training processes, or an active login
+  session; `--force` exists but only use it after the user says so.
 
 ## Hard rules
 
@@ -42,8 +56,8 @@ so prefer `cuda run`. Full docs: `~/bin/CUDA-README.md`.
   venvs `~/vllmenv`/`~/ftenv`, everything loose in `C:\Users\barat` (parquets, train_*.py,
   `trendyol_sync`), and the Mac-side `~/Projects/Trendyol2026/scripts/*` (gpu.sh, sync_to_gpu.sh,
   orchestrate*.sh). Read them for reference; never modify, move, or "clean up".
-- **Never `cuda off` without checking**: the guard catches WSL python/GPU load, but a queued
-  job between epochs can look idle — if a training task was recently started, ask the user.
+- **Never `cuda off` on your own initiative** — see Power policy above. The guard is a
+  safety net, not permission.
 - **Only Tailscale TCP works.** LAN IP 192.168.1.101 pings but TCP is firewalled. SMB hangs;
   use scp/SFTP. Don't burn time re-deriving this.
 - Windows-side HF cache is empty by design — weights live in WSL.

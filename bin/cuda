@@ -79,14 +79,19 @@ case "${1:-help}" in
     ;;
 
   off)
+    # POLICY: shutting down is owner-initiated only — agents must never call this
+    # on their own; see the cuda-box skill's Power policy. Default after a job: leave ON.
     if ! is_up; then echo "already off / unreachable"; exit 0; fi
     if [ "${2:-}" != "--force" ]; then
       util=$(ssh "${SSHQ[@]}" "$HOST" "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits" 2>/dev/null | tr -cd '0-9')
       procs=$(training_procs || true)
-      if [ -n "$procs" ] || [ "${util:-0}" -ge 20 ] 2>/dev/null; then
-        echo "REFUSING to shut down — GPU util ${util:-?}% and/or training processes:"
-        echo "${procs:-  (none)}"
-        echo "Use 'cuda off --force' if you're sure."
+      sess=$(ssh "${SSHQ[@]}" "$HOST" "quser 2>nul" 2>/dev/null | grep -i " active " || true)
+      if [ -n "$procs" ] || [ -n "$sess" ] || [ "${util:-0}" -ge 20 ] 2>/dev/null; then
+        echo "REFUSING to shut down:"
+        [ -n "$sess" ]  && { echo "  someone is logged in:"; echo "$sess"; }
+        [ "${util:-0}" -ge 20 ] 2>/dev/null && echo "  GPU util ${util}%"
+        [ -n "$procs" ] && { echo "  training processes:"; echo "$procs"; }
+        echo "Use 'cuda off --force' only if the owner confirmed."
         exit 1
       fi
     fi

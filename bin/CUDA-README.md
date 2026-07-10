@@ -81,7 +81,9 @@ Current snapshot: `~/.claude/skills/cuda-box/references/INVENTORY.md` (regen: `c
 2. Point HF at the shared cache (default already) — don't duplicate model downloads.
 3. Stage transfers through `C:\Users\barat\<project>_sync`, then `cuda run 'cp ...'`
    into WSL (scp can't write into the WSL filesystem directly).
-4. When training finishes and the box is idle: `cuda off` (it self-guards).
+4. When a job finishes: **leave the box on** and let the owner decide about power.
+   `cuda off` is owner-initiated only (or pre-authorized per task); the guard refuses
+   on GPU load, training procs, or an active login session. Minimize on/off churn.
 5. Cold artifacts → drop into Studio `~/Outbox` → they land in `E:\Archive`.
 
 ## ⚠️ Trendyol 2026 (until the competition ends)
