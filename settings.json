@@ -2,6 +2,9 @@
   "permissions": {
     "defaultMode": "auto"
   },
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": true
+  },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
