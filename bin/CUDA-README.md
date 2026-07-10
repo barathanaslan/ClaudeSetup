@@ -18,6 +18,14 @@ cuda ssh               # interactive shell (Windows cmd; type `wsl` for Linux)
 
 Also: `ssh cuda` works (alias in `~/.ssh/config`).
 
+## Access level
+
+SSH sessions as `barat` carry a **full Administrator token** — the key sits in
+`C:\ProgramData\ssh\administrators_authorized_keys` and barat is in the Administrators
+group. Service installs, schtasks, HKLM edits all work over ssh. (`net session` is a
+broken admin probe on this box; use `[WindowsPrincipal]::IsInRole(Administrator)`.)
+System-level changes still require the owner's explicit OK per change.
+
 ## Network facts (hard-won, don't re-derive)
 
 - **Tailscale IP `100.95.91.27` is the only TCP path.** The LAN IP (`192.168.1.101`)

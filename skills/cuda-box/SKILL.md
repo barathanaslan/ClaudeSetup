@@ -47,6 +47,13 @@ so prefer `cuda run`. Full docs: `~/bin/CUDA-README.md`.
 - **Only Tailscale TCP works.** LAN IP 192.168.1.101 pings but TCP is firewalled. SMB hangs;
   use scp/SFTP. Don't burn time re-deriving this.
 - Windows-side HF cache is empty by design — weights live in WSL.
+- **SSH sessions are FULL ADMINISTRATOR** (key in `administrators_authorized_keys`; verified
+  2026-07-10 with the owner's blessing). Registry, services, schtasks all work remotely.
+  With that power: never make system-level changes (services, HKLM, scheduled tasks,
+  firewall) without the user explicitly approving that specific change. Don't trust
+  `net session` as an admin probe — it false-negatives; use the WindowsPrincipal check.
+- PowerShell scripts sent to this box must be ASCII-only (PS 5.1 + BOM-less UTF-8 = mangled
+  string literals).
 
 ## Related
 
