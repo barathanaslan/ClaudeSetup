@@ -13,6 +13,7 @@
 - Machine: Mac Studio, M3 Ultra chip, 96GB unified memory, macOS.
 - Never assume CUDA locally — use MPS for PyTorch, MLX when possible.
 - A remote CUDA box exists on the tailnet (RTX 5070 Ti, usually powered off): manage it only through `~/bin/cuda` (status/on/off/run) — see the `cuda-box` skill before touching it.
+- To read CPU/RAM/GPU usage of this or any tailnet machine, run `tailmon json` (or `curl http://<tailscale-ip>:7020/stats`) — never parse vm_stat/top/Activity Monitor by hand; macOS memory readings there are misleading.
 - Primary ML frameworks: PyTorch (with MPS), MLX.
 - Primary LLM API: Google Gemini.
 
