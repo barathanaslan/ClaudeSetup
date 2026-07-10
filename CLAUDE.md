@@ -11,7 +11,8 @@
 ## Environment
 
 - Machine: Mac Studio, M3 Ultra chip, 96GB unified memory, macOS.
-- Never assume CUDA — use MPS for PyTorch, MLX when possible.
+- Never assume CUDA locally — use MPS for PyTorch, MLX when possible.
+- A remote CUDA box exists on the tailnet (RTX 5070 Ti, usually powered off): manage it only through `~/bin/cuda` (status/on/off/run) — see the `cuda-box` skill before touching it.
 - Primary ML frameworks: PyTorch (with MPS), MLX.
 - Primary LLM API: Google Gemini.
 

@@ -1,0 +1,152 @@
+#!/bin/bash
+# cuda — one command for the CUDA box (barathans-5070: RTX 5070 Ti 16GB, Windows 11 + WSL2).
+# Usable by humans and any AI tool on this Mac. Full docs: ~/bin/CUDA-README.md
+#
+#   cuda status            up/down, GPU load, training procs, disks, uptime
+#   cuda on                wake it (WoL magic packet), wait until reachable
+#   cuda off [--force]     shut it down; refuses if the GPU looks busy unless --force
+#   cuda run '<bash>'      run bash inside WSL (where all ML work lives), quoting-safe
+#   cuda win '<cmd>'       run a Windows cmd.exe command
+#   cuda inventory         regenerate the what-lives-where map (INVENTORY.md)
+#   cuda ssh               interactive shell (lands in Windows cmd; type `wsl` for Linux)
+
+set -u
+
+HOST="barat@100.95.91.27"        # Tailscale IP — the only routable TCP path (LAN TCP is firewalled)
+MAC="A0:AD:9F:D0:CC:2E"          # Ethernet NIC MAC, for wake-on-lan
+LAN_IP="192.168.1.101"           # LAN address — ICMP/broadcast reach it, TCP does not
+BCAST="192.168.1.255"
+SSHQ=(-o BatchMode=yes -o ConnectTimeout=8 -o ServerAliveInterval=30 -o ServerAliveCountMax=10)
+INVENTORY="$HOME/.claude/skills/cuda-box/references/INVENTORY.md"
+
+filt() { grep -ivE "post-quantum|store now|need to be upgraded|openssh.com/pq|vulnerable to|screen size is bogus"; }
+
+is_up() { ssh -o BatchMode=yes -o ConnectTimeout=5 "$HOST" "echo up" >/dev/null 2>&1; }
+
+send_wol() {
+  python3 - "$MAC" "$BCAST" "$LAN_IP" <<'PY'
+import socket, sys
+mac, bcast, lan = sys.argv[1], sys.argv[2], sys.argv[3]
+pkt = b"\xff" * 6 + bytes.fromhex(mac.replace(":", "")) * 16
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+for dest in (bcast, "255.255.255.255", lan):
+    for port in (9, 7):
+        for _ in range(3):
+            try: s.sendto(pkt, (dest, port))
+            except OSError: pass
+PY
+}
+
+wsl_run() {
+  local b64
+  b64=$(printf '%s' "$1" | base64 | tr -d '\n')
+  ssh "${SSHQ[@]}" "$HOST" "wsl bash -lc \"echo $b64 | base64 -d | bash\"" 2>&1 | filt
+  return "${PIPESTATUS[0]}"
+}
+
+training_procs() {  # non-empty output = something ML-ish is running in WSL
+  wsl_run 'pgrep -af "python|torchrun|vllm|accelerate|deepspeed" | grep -vE "pgrep|unattended-upgrade"' 2>/dev/null | grep -v '^[[:space:]]*$'
+}
+
+case "${1:-help}" in
+
+  status)
+    if ! is_up; then
+      echo "cuda box: OFF / unreachable  (wake it: cuda on)"
+      exit 1
+    fi
+    echo "cuda box: UP  ($HOST)"
+    ssh "${SSHQ[@]}" "$HOST" 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader & powershell -NoProfile -Command "Write-Output (\"uptime: {0:N0} min\" -f ((Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalMinutes); Get-Volume | Where-Object DriveLetter | ForEach-Object { Write-Output (\"{0}: {1}G free / {2}G\" -f $_.DriveLetter, [math]::Round($_.SizeRemaining/1GB), [math]::Round($_.Size/1GB)) }"' 2>/dev/null | filt
+    echo "--- WSL ---"
+    wsl_run 'df -h / | tail -1 | awk "{print \"wsl disk: \" \$4 \" free of \" \$2}"; p=$(pgrep -af "python|torchrun|vllm|accelerate|deepspeed" | grep -vE "pgrep|unattended-upgrade"); if [ -n "$p" ]; then echo "TRAINING PROCS:"; echo "$p"; else echo "no training processes"; fi'
+    ;;
+
+  on)
+    if is_up; then echo "already up"; exit 0; fi
+    echo "sending wake-on-lan magic packets to $MAC ..."
+    send_wol
+    for i in $(seq 1 36); do
+      sleep 5
+      if is_up; then echo "UP after ~$((i * 5))s"; exit 0; fi
+      if (( i % 6 == 0 )); then send_wol; echo "  still waiting ($((i * 5))s) — packets re-sent"; fi
+    done
+    echo "FAILED: not reachable after 3 min."
+    echo "Check the wake-stack table in ~/bin/CUDA-README.md — likely a BIOS/CMOS reset"
+    echo "(Power On By PCI-E), a Windows update re-enabling Fast Startup, or Tailscale"
+    echo "unattended mode off. Power on manually once, fix the reverted layer, retry."
+    exit 1
+    ;;
+
+  off)
+    if ! is_up; then echo "already off / unreachable"; exit 0; fi
+    if [ "${2:-}" != "--force" ]; then
+      util=$(ssh "${SSHQ[@]}" "$HOST" "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits" 2>/dev/null | tr -cd '0-9')
+      procs=$(training_procs || true)
+      if [ -n "$procs" ] || [ "${util:-0}" -ge 20 ] 2>/dev/null; then
+        echo "REFUSING to shut down — GPU util ${util:-?}% and/or training processes:"
+        echo "${procs:-  (none)}"
+        echo "Use 'cuda off --force' if you're sure."
+        exit 1
+      fi
+    fi
+    echo "shutting down..."
+    ssh "${SSHQ[@]}" "$HOST" "shutdown /s /t 5" 2>/dev/null | filt
+    echo "shutdown issued. Wake later with: cuda on"
+    ;;
+
+  run)
+    [ -n "${2:-}" ] || { echo "usage: cuda run '<bash command>'"; exit 2; }
+    wsl_run "$2"
+    ;;
+
+  win)
+    [ -n "${2:-}" ] || { echo "usage: cuda win '<windows command>'"; exit 2; }
+    ssh "${SSHQ[@]}" "$HOST" "$2" 2>&1 | filt
+    exit "${PIPESTATUS[0]}"
+    ;;
+
+  ssh)
+    exec ssh -o ServerAliveInterval=30 "$HOST"
+    ;;
+
+  inventory)
+    if ! is_up; then echo "box is off — wake it first (cuda on)"; exit 1; fi
+    mkdir -p "$(dirname "$INVENTORY")"
+    {
+      echo "# CUDA box inventory — what lives where"
+      echo
+      echo "_Generated by \`cuda inventory\` on $(date '+%Y-%m-%d %H:%M')._"
+      echo
+      echo "## WSL (~ = /home/barathanaslan) — where all ML work actually lives"
+      echo '```'
+      wsl_run 'du -sh ~/* ~/.cache/huggingface 2>/dev/null | sort -rh | head -25'
+      echo '```'
+      echo
+      echo "## HuggingFace models cached in WSL (~/.cache/huggingface/hub)"
+      echo '```'
+      wsl_run 'ls ~/.cache/huggingface/hub 2>/dev/null | grep "^models--" | sed "s/^models--//; s/--/\//"'
+      echo '```'
+      echo
+      echo "## Windows side"
+      echo '```'
+      ssh "${SSHQ[@]}" "$HOST" 'powershell -NoProfile -Command "Get-Volume | Where-Object DriveLetter | ForEach-Object { Write-Output (\"{0}: {1}G free / {2}G\" -f $_.DriveLetter, [math]::Round($_.SizeRemaining/1GB), [math]::Round($_.Size/1GB)) }"' 2>/dev/null | filt
+      echo '---- C:\Users\barat (staging + loose Trendyol artifacts) ----'
+      ssh "${SSHQ[@]}" "$HOST" 'dir C:\Users\barat /b' 2>/dev/null | filt
+      echo '---- E:\ ----'
+      ssh "${SSHQ[@]}" "$HOST" 'dir E:\ /b' 2>/dev/null | filt
+      echo '```'
+      echo
+      echo "## E:\\Archive (Studio offload target — browse with ~/bin/archive-ls.sh)"
+      echo '```'
+      /opt/homebrew/bin/rclone lsf --max-depth 1 --dirs-only "pc-archive:/E:/Archive" 2>/dev/null
+      echo '```'
+    } > "$INVENTORY"
+    echo "written: $INVENTORY"
+    cat "$INVENTORY"
+    ;;
+
+  help|*)
+    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+esac

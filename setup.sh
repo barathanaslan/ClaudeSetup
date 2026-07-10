@@ -79,6 +79,53 @@ for cmd_file in "$SCRIPT_DIR/commands"/*.md; do
     fi
 done
 
+# --- Personal scripts (~/bin) ---
+# Portable helpers that should exist on every machine (e.g. `cuda` for the
+# tailnet GPU box). Machine-specific scripts (archive-*.sh) stay out of the repo.
+echo "Setting up ~/bin scripts..."
+mkdir -p "$HOME/bin"
+chmod +x "$SCRIPT_DIR/bin/cuda" 2>/dev/null || true
+for bin_file in "$SCRIPT_DIR/bin"/*; do
+    if [ -f "$bin_file" ]; then
+        bin_name="$(basename "$bin_file")"
+        link_item "$bin_file" "$HOME/bin/$bin_name"
+    fi
+done
+
+# --- Prune orphaned symlinks pointing into this repo ---
+# Removes symlinks under ~/.claude whose target is inside $SCRIPT_DIR but
+# no longer exists (e.g. a skill/command/agent that was deleted upstream).
+# Only touches symlinks owned by us — leaves unrelated files alone.
+echo "Pruning orphaned symlinks..."
+prune_orphans() {
+    local dir="$1"
+    [ -d "$dir" ] || return 0
+    local removed=0
+    for entry in "$dir"/* "$dir"/.[!.]*; do
+        [ -L "$entry" ] || continue
+        local target
+        target="$(readlink "$entry")"
+        case "$target" in
+            "$SCRIPT_DIR"/*)
+                if [ ! -e "$entry" ]; then
+                    rm "$entry"
+                    echo "  Removed orphan: $entry -> $target"
+                    removed=$((removed + 1))
+                fi
+                ;;
+        esac
+    done
+    # Drop the parent dir if it's now empty (e.g. ~/.claude/agents)
+    if [ -d "$dir" ] && [ -z "$(ls -A "$dir")" ]; then
+        rmdir "$dir"
+        echo "  Removed empty dir: $dir"
+    fi
+}
+prune_orphans "$CLAUDE_DIR/skills"
+prune_orphans "$CLAUDE_DIR/commands"
+prune_orphans "$CLAUDE_DIR/agents"
+prune_orphans "$HOME/bin"
+
 echo ""
 echo "Done. Installed:"
 echo "  - CLAUDE.md (global)"
