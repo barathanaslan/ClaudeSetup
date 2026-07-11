@@ -38,11 +38,13 @@ so prefer `cuda run`. Full docs: `~/bin/CUDA-README.md`.
 
 ## Power policy (the owner was explicit about this — 2026-07-10)
 
-- `cuda on` freely: waking is cheap and harmless.
-- `cuda off` is **never agent-initiated**. Shut down only when the user explicitly asks in
-  the current conversation, or pre-authorized "turn it off when the job finishes" for this
+- `cuda on` freely: waking is cheap and harmless (works from full-off AND sleep).
+- `cuda off` and `cuda sleep` are **never agent-initiated**. Change power state only when
+  the user explicitly asks in the current conversation, or pre-authorized it for this
   specific task. An idle-looking box may still be in use — a desktop session, a download,
   a job between epochs. When in doubt, leave it on.
+- When the user does authorize powering down and expects to return soon, prefer
+  `cuda sleep` (suspend to RAM: ~2s resume by any key at the desk) over `cuda off`.
 - If you woke the box for your own task, the default after finishing is ON + inform the
   user — never "clean up" by powering it down.
 - Don't power-cycle as a testing convenience. On/off churn wears the hardware and annoys

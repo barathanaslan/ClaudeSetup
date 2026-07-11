@@ -3,8 +3,9 @@
 # Usable by humans and any AI tool on this Mac. Full docs: ~/bin/CUDA-README.md
 #
 #   cuda status            up/down, GPU load, training procs, disks, uptime
-#   cuda on                wake it (WoL magic packet), wait until reachable
-#   cuda off [--force]     shut it down; refuses if the GPU looks busy unless --force
+#   cuda on                wake it (WoL magic packet; works from off AND sleep)
+#   cuda off [--force]     shut it down; refuses if busy/logged-in unless --force
+#   cuda sleep [--force]   suspend to RAM (S3) — wakes by any key or `cuda on`
 #   cuda run '<bash>'      run bash inside WSL (where all ML work lives), quoting-safe
 #   cuda win '<cmd>'       run a Windows cmd.exe command
 #   cuda inventory         regenerate the what-lives-where map (INVENTORY.md)
@@ -78,26 +79,35 @@ case "${1:-help}" in
     exit 1
     ;;
 
-  off)
-    # POLICY: shutting down is owner-initiated only — agents must never call this
-    # on their own; see the cuda-box skill's Power policy. Default after a job: leave ON.
+  off|sleep)
+    # POLICY: power-state changes are owner-initiated only — agents must never
+    # call these on their own; see the cuda-box skill's Power policy.
+    verb="shut down"; [ "$1" = "sleep" ] && verb="suspend"
     if ! is_up; then echo "already off / unreachable"; exit 0; fi
     if [ "${2:-}" != "--force" ]; then
       util=$(ssh "${SSHQ[@]}" "$HOST" "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits" 2>/dev/null | tr -cd '0-9')
       procs=$(training_procs || true)
       sess=$(ssh "${SSHQ[@]}" "$HOST" "quser 2>nul" 2>/dev/null | grep -i " active " || true)
       if [ -n "$procs" ] || [ -n "$sess" ] || [ "${util:-0}" -ge 20 ] 2>/dev/null; then
-        echo "REFUSING to shut down:"
+        echo "REFUSING to $verb:"
         [ -n "$sess" ]  && { echo "  someone is logged in:"; echo "$sess"; }
         [ "${util:-0}" -ge 20 ] 2>/dev/null && echo "  GPU util ${util}%"
         [ -n "$procs" ] && { echo "  training processes:"; echo "$procs"; }
-        echo "Use 'cuda off --force' only if the owner confirmed."
+        echo "Use 'cuda $1 --force' only if the owner confirmed."
         exit 1
       fi
     fi
-    echo "shutting down..."
-    ssh "${SSHQ[@]}" "$HOST" "shutdown /s /t 5" 2>/dev/null | filt
-    echo "shutdown issued. Wake later with: cuda on"
+    if [ "$1" = "sleep" ]; then
+      echo "suspending to RAM..."
+      # .NET Suspend requests S3 specifically (the rundll32 variant hibernates
+      # when hibernation is enabled — don't use it).
+      ssh "${SSHQ[@]}" "$HOST" 'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $false)"' 2>/dev/null | filt
+      echo "asleep. Wake: any key at the desk, or cuda on (WoL works from sleep)."
+    else
+      echo "shutting down..."
+      ssh "${SSHQ[@]}" "$HOST" "shutdown /s /t 5" 2>/dev/null | filt
+      echo "shutdown issued. Wake later with: cuda on"
+    fi
     ;;
 
   run)
