@@ -9,6 +9,15 @@
 - `docs/` is shared state between you and any worker agents. Read it at the start of a session if it exists, and keep it current when you finish meaningful work.
 - When context is getting long, summarize the state into `docs/` before it gets compacted away.
 
+## Open-Ended Work (optimization, competitions, research)
+
+- For "make X faster / better / higher-scoring" work, agree on the verifier before implementing: the metric, the current baseline number, the target, the correctness gate, and a scope fence (what must not change). If no harness exists, building it is step one — see the `workflow` skill's Campaigns section.
+- Restate substantive asks back — problem, success criterion, plan — and get corrections before the work starts; incomplete directives are cheapest to fix there.
+- Log every attempt in `docs/ledger.md`, append-only: hypothesis, change, measured result, verdict. `status.md` stays the snapshot; the ledger is the history.
+- Never present a first working version as done — say where it sits against the baseline and the known ceiling, and what you'd try next.
+- Every accepted optimization carries a one-line "why this works" that the user can vouch for.
+- Long autonomous runs start with a reporting cadence, a time/cost estimate, and a kill-threshold the run itself enforces (stop and report at ~2× the estimate) — work never continues outside the user's view.
+
 ## Environment
 
 - Machine: Mac Studio, M3 Ultra chip, 96GB unified memory, macOS.
