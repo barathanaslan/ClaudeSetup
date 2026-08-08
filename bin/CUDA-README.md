@@ -66,12 +66,18 @@ Two caveats away from the Studio:
 | Place | What |
 |---|---|
 | WSL `~/trendyol`, `~/ft`, `~/judge` | **Trendyol 2026 competition — FROZEN, do not touch** |
-| WSL `~/.cache/huggingface` | shared HF model cache (~34G) — all projects reuse this |
+| WSL `~/.cache/huggingface` | shared HF model cache — all projects reuse this |
 | WSL `~/vllmenv`, `~/ftenv` | venvs (vllm / fine-tuning) — Trendyol-era, leave alone |
-| WSL `~/ml/<project>/` | **convention for every NEW project** (create as needed) |
-| `C:\Users\barat\trendyol_sync` | Mac→PC staging for Trendyol (frozen) |
-| `C:\Users\barat\<project>_sync` | staging pattern for new projects (scp lands here, WSL copies in) |
-| `E:\Archive` | Studio offload target (see ARCHIVE-README.md) — incl. `ModelArchive/` |
+| WSL `~/ml/<project>/` | **convention for every NEW project** — ACTIVE working sets only |
+| `E:\ML\sync\<project>\` | scp staging for new projects (transient — delete after ingest) |
+| `E:\ML\datasets\`, `E:\ML\outputs\` | bulk session storage: dormant datasets, finished checkpoints/outputs |
+| `E:\Archive` | Studio offload target (see ARCHIVE-README.md) — incl. `ModelArchive/` (dormant weights) and `Trendyol2026/` (Windows-side Trendyol files, moved off C: 2026-08-08) |
+| `C:\Users\barat\<project>_sync` | DEPRECATED staging pattern (2026-08-08) — use `E:\ML\sync` instead |
+
+**Storage policy (owner, 2026-08-08):** C: is the system SSD and holds the WSL
+`ext4.vhdx`, which grows but never shrinks — keep bulk data on E:. After big deletions
+inside WSL, C: only recovers space via vhdx compaction (`wsl --shutdown` +
+`Optimize-VHD`), done when the box is idle. Full policy: cuda-box skill.
 
 Current snapshot: `~/.claude/skills/cuda-box/references/INVENTORY.md` (regen: `cuda inventory`).
 
@@ -79,8 +85,9 @@ Current snapshot: `~/.claude/skills/cuda-box/references/INVENTORY.md` (regen: `c
 
 1. Work in WSL under `~/ml/<project>/{src,data,ckpt,runs}` — never loose in `~`.
 2. Point HF at the shared cache (default already) — don't duplicate model downloads.
-3. Stage transfers through `C:\Users\barat\<project>_sync`, then `cuda run 'cp ...'`
-   into WSL (scp can't write into the WSL filesystem directly).
+3. Stage transfers through `scp <file> "cuda:E:/ML/sync/<project>/..."`, then
+   `cuda run 'cp /mnt/e/ML/sync/... ~/ml/<project>/...'` into WSL (scp can't write
+   into the WSL filesystem directly). Delete the staging copy after ingest.
 4. When a job finishes: **leave the box on** and let the owner decide about power.
    `cuda off` is owner-initiated only (or pre-authorized per task); the guard refuses
    on GPU load, training procs, or an active login session. Minimize on/off churn.

@@ -146,8 +146,8 @@ case "${1:-help}" in
       echo "## Windows side"
       echo '```'
       ssh "${SSHQ[@]}" "$HOST" 'powershell -NoProfile -Command "Get-Volume | Where-Object DriveLetter | ForEach-Object { Write-Output (\"{0}: {1}G free / {2}G\" -f $_.DriveLetter, [math]::Round($_.SizeRemaining/1GB), [math]::Round($_.Size/1GB)) }"' 2>/dev/null | filt
-      echo '---- C:\Users\barat (staging + loose Trendyol artifacts) ----'
-      ssh "${SSHQ[@]}" "$HOST" 'dir C:\Users\barat /b' 2>/dev/null | filt
+      echo '---- C:\Users\barat items >100MB (staging debris; should be near-empty per storage policy) ----'
+      wsl_run 'cd /mnt/c/Users/barat 2>/dev/null && for f in *; do case "$f" in AppData|Application*|Local*|OneDrive) continue;; esac; kb=$(du -s "$f" 2>/dev/null | cut -f1); [ "${kb:-0}" -ge 102400 ] && du -sh "$f"; done; true'
       echo '---- E:\ ----'
       ssh "${SSHQ[@]}" "$HOST" 'dir E:\ /b' 2>/dev/null | filt
       echo '```'
