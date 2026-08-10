@@ -1,50 +1,10 @@
 ---
 name: workflow
-description: Discipline for open-ended improvement work — tasks with no natural endpoint where the extent of the work is unknown and progress is a measured number. TRIGGER on "optimize this", "speed it up", "make it faster", "improve the score", "beat the baseline", "reduce compute", leaderboard/Kaggle/competition work, or any "make X better" ask with no clear finish line. Do NOT trigger for bounded work — feature implementation, bug fixes, planning, delegation, or session startup; CLAUDE.md already covers that working style. Also serves as the reference for the plan-file format and docs/ folder layout when CLAUDE.md points here explicitly.
+description: How the user likes to work — architect-delegate pattern and the docs/ folder for project memory. Background knowledge. Relevant when planning multi-step work, deciding whether to delegate to a background agent, or managing persistent project context. TRIGGER on "implement this", "go ahead", "delegate this", "spawn a worker", "let's plan this out", "what's the status", "where were we", "bring me up to speed", "create docs", or starting a new session on an existing project.
 user-invocable: false
 ---
 
-# Campaigns (open-ended optimization)
-
-Some work has no natural endpoint: optimize a package, climb a leaderboard, cut a pipeline's compute, improve a model. The unit of progress there is a **measured experiment**, not a feature. Activity without a verifier produces plausible results that quietly stay mediocre — the user has to catch regressions by hand, and first working versions get mistaken for done.
-
-## Before the first experiment
-
-1. **Verifier first.** Pin down with the user: the metric, the current baseline number, the target (or the threshold that makes the work worth doing), the correctness gate, and a scope fence — what must not change. If the project has no harness (fixed inputs, reference outputs with a stated tolerance, a timing script), building it IS the first task, before any optimization.
-2. **Tolerance tiers.** Decide up front what "still correct" means: bitwise-identical, numeric epsilon, or domain-level tolerance. Bitwise gates make every legitimate optimization look like a regression the moment float ordering changes.
-3. **Headroom scan.** Profile before hypothesizing, and ask what the ceiling is: complexity bounds, known-best implementations, prior art — someone may already have solved it. State how far the baseline sits from that ceiling.
-
-## The loop
-
-- Keep a ranked hypothesis list — generate many, rank by expected gain × risk.
-- One experiment per hypothesis. The harness judges; append one row to `docs/ledger.md` per attempt.
-- Independent hypotheses can fan out to parallel agents/worktrees — the harness adjudicates, so parallel attempts are cheap to compare.
-- **Long runs carry an observability contract.** Before any multi-hour autonomous run: agreed reporting cadence and checkpoints, an explicit time/cost estimate, and a kill-threshold the run itself enforces — stop and report at ~2× the estimate. Work never continues outside the user's view; a run that goes silent gets killed regardless of its promise.
-- Stop on "N consecutive attempts without improvement", not on first success. At plateaus, re-run the headroom question before declaring done.
-
-## Ledger format (docs/ledger.md)
-
-Created on the first experiment, not before. Append-only — never rewrite past rows (`status.md` is the snapshot; the ledger is the history). Header states the goal, metric, and baseline; then one row per experiment:
-
-```markdown
-# Ledger — <goal>. Metric: <metric>. Baseline: <number> (<date>).
-
-| # | date | hypothesis | change | predicted | result | verdict |
-```
-
-Fill `predicted` before the run, `result` after. Verdict is kept / killed / blocked, plus a few words of why. A drifting predicted-vs-actual residual means the harness is lying — wrong data, leakage, offline/online mismatch — and the headroom estimate is off by the same factor. Mirror the current best number in `status.md`.
-
-## Roles
-
-- The harness judges correctness and the number.
-- The user judges direction, domain sense, and legibility: every accepted change needs a one-line "why this works". A result the user can't explain will be rejected regardless of the number.
-- Where no cheap verifier can exist (design, writing, taste), this pattern doesn't apply — keep loops short and interactive instead.
-
----
-
-# Reference: Architect-Delegate Pattern
-
-CLAUDE.md carries the working style itself; this section holds the details it points to. Consult when actually writing a plan file or delegating — not needed for routine work.
+# Working Style: Architect-Delegate & Project Docs
 
 The user prefers to keep the main conversation strategic — discussing goals, exploring approaches, planning, and reviewing — while heavier implementation runs in background agents. This is a preference, not a hard rule: use judgment.
 
@@ -105,7 +65,7 @@ Fix issues inline if trivial, or send the implementer back with fix instructions
 - <What NOT to do, gotchas, edge cases>
 ```
 
-# Reference: Project Docs (docs/)
+# Project Docs (docs/)
 
 A `docs/` folder is persistent memory for both the user and Claude across sessions — it survives context resets, bridges time gaps, and gives a fresh Claude instance full context without re-explanation. Use it for projects substantial enough to benefit; skip it for throwaway work.
 
@@ -115,7 +75,6 @@ A `docs/` folder is persistent memory for both the user and Claude across sessio
 docs/
   overview.md    # What this project is, architecture, constraints. Updated rarely.
   status.md      # Current snapshot: done / in progress / next / blocked. Overwritten in place.
-  ledger.md      # Campaigns only: append-only experiment log. Created on the first experiment.
   plans/         # Plan files for the architect-delegate workflow
   notes/         # Optional. Research, references, scratch. Only when needed.
 ```
@@ -126,14 +85,12 @@ The principle matters more than the structure — a small project may need only 
 
 - **overview.md** — what it does (1–2 paragraphs), architecture and how components connect, how to run/build/test, key dependencies. Describes how it works, not a copy of the code. Updated rarely.
 - **status.md** — always reflects *right now*; update in place, don't append history (git holds history). Under ~40 lines. Sections: Done, In Progress, Next, Blocked/Known Issues.
-- **ledger.md** — campaigns only (see Campaigns): one row per experiment, append-only, never edited after the fact. The one docs file where history accumulates on purpose.
 - **notes/** — only when there's something worth saving. No placeholder files.
 
 ## When to read / update
 
 - **Read**: at the start of a session, before planning, and as part of a worker agent's context.
 - **Update**: the main conversation (architect) maintains `status.md`, not worker agents — after a cycle completes, not after every tiny change. `overview.md` only on significant architectural changes.
-- **Ledger**: appended by whoever ran the experiment (worker agents included), immediately after the harness reports — never batched up or reconstructed later.
 
 ## Conciseness
 
