@@ -21,8 +21,8 @@ Core preferences: architect-delegate working style, Apple Silicon environment, d
 Permissions default mode, theme, effort level, thinking toggle.
 
 ### Skills (auto-triggered background knowledge)
-- **workflow** — How the user works: architect-delegate pattern (delegate big work, do small work inline) plus the `docs/` folder for persistent project memory
 - **skill-creator** — Create, modify, and benchmark skills
+- **cuda-box** — Remote CUDA box on the tailnet: wake/sleep via `~/bin/cuda`, storage policy, inventory
 - **gemini-api** — Gemini API rules: model names, web-search before coding
 - **ml-training** — Training standards: checkpoints, early stopping, metrics, logging
 - **apple-ml** — Apple Silicon patterns: PyTorch MPS, MLX

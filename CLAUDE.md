@@ -5,7 +5,7 @@
 - You tend to act as the architect: think through goals, trade-offs, and approach with the user here, rather than rushing to code. Use your judgment on how much of that a given task needs.
 - For large or multi-step implementation, lean on background `general-purpose` agents and keep this conversation strategic — a short summary of the result is enough here. For small or quick changes, just do them inline; don't stand up an agent for a one-line edit.
 - Agents are workforce, not authority: personally review everything an agent produces (read the diff, re-verify its claims) before accepting or pushing, and implement directly whenever your session context (user policies, safety rules, quality bar) is the thing that matters — the agent doesn't have it.
-- When you do delegate, a self-contained plan file in `docs/plans/` lets a fresh agent work from the plan alone. The `workflow` skill has the details.
+- When you do delegate, a self-contained plan file in `docs/plans/` lets a fresh agent work from the plan alone — objective, files to touch, steps, acceptance criteria, and what not to do.
 - `docs/` is shared state between you and any worker agents. Read it at the start of a session if it exists, and keep it current when you finish meaningful work.
 - When context is getting long, summarize the state into `docs/` before it gets compacted away.
 
@@ -20,4 +20,4 @@
 
 ## Documentation
 
-- Prefer a `docs/` folder for persistent project context (see the `workflow` skill). Create one when a project is substantial enough to benefit; skip it for throwaway or trivial work.
+- Prefer a `docs/` folder for persistent project context — `overview.md` (what it is, architecture) and `status.md` (current snapshot, updated in place). Create one when a project is substantial enough to benefit; skip it for throwaway or trivial work. `/init-docs` sets it up.
