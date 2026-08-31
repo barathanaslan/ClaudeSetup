@@ -10,6 +10,39 @@
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "agentPushNotifEnabled": true
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Bash(tailmon:*)",
+      "WebFetch(domain:service.scedc.caltech.edu)",
+      "WebFetch(domain:earthquake.usgs.gov)"
+    ],
+    "environment": [
+      "### Org-wide",
+      "- **Organization**: None configured",
+      "- **Cloud provider(s)**: Google Cloud (gcloud CLI used in this project's transcripts and shell history; no project, account, or buckets identified)",
+      "- **Repository visibility**: local repository at ~/Google-Deprem with no git remote configured — treat as private/unpublished; adding a remote and pushing is a publication decision, not routine",
+      "- **Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "- **Secrets management**: None configured",
+      "- **Default / protected branches**: unknown — repo has no remote and the gh visibility/protection check was not queryable; treat history rewrites or force-pushes on any future default branch as needing confirmation",
+      "- **CI/CD deploy targets**: None configured",
+      "- **Network posture**: personal Tailscale tailnet (taile11703.ts.net); ephemeral trycloudflare.com tunnels have appeared in this project's transcripts — treat standing up new external ingress tunnels as confirmation-worthy, not routine",
+      "- **Source control**: the trusted repo only — a local checkout with no configured remote (no additional orgs configured); any push destination must be confirmed before first use",
+      "- **Trusted internal domains**: barathans-macstudio.taile11703.ts.net only (tailmon stats endpoint on the tailnet, corroborated by transcript usage); no wildcard on *.ts.net",
+      "- **Trusted cloud buckets**: None configured",
+      "- **Key internal services**: tailmon stats service (tailmon json or http://<tailscale-ip>:7020/stats, read-only machine metrics); remote CUDA box on the tailnet managed only via ~/bin/cuda (status/on/off/run)",
+      "- **Internal package registry**: None configured",
+      "- **Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar",
+      "- **Data retention / declassification**: None configured",
+      "- **Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited — e.g. matches `prod-db`, not `producer`)",
+      "- **Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "- **Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "- **Primary use of Claude Code**: software development and seismology/ML research on macOS (PyTorch with MPS, MLX; fetches public earthquake data from service.scedc.caltech.edu, earthquake.usgs.gov, gfzpublic.gfz.de, zenodo.org)",
+      "- **Trusted repo**: the git repository the agent started in — /Users/barathanaslan/Google-Deprem — with no configured remote, so no push destination is trusted by default; nested checkouts under it (pyfk-opt, FocoNet, FocoNet-corpus-wt) were found by the repo scan but their remotes are unverified provenance here, so pushes to them require confirmation",
+      "- **Org-specific CLIs**: tailmon (read-only tailnet machine stats — routine), ~/bin/cuda (power and job control for the remote tailnet CUDA box — status/run are routine, on/off affect a shared physical machine)"
+    ]
+  }
 }
