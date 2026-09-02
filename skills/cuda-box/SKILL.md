@@ -23,6 +23,34 @@ cuda inventory         # regenerate references/INVENTORY.md (what lives where)
 `ssh cuda` also works (alias in ~/.ssh/config) but lands in Windows cmd — ML work is in WSL,
 so prefer `cuda run`. Full docs: `~/bin/CUDA-README.md`.
 
+## What lives where on the box (2026-09)
+
+The WSL home mirrors the Mac home, so project paths are the same on every machine:
+
+- `~/Google-Deprem/` — the seismology project, code on ext4. `FocoNet/` is the git repo
+  (github `seismicbundle/FocoNet`) with its venv at `FocoNet/.venv` (cu128 torch, sees the 5090).
+  The large subtrees (`FocoNet/out/*`, `FocoNet/foconet-dataset`, `FocoNet/benchmarks`,
+  `ProjectDocs/*`, `analytic-corpus/out/*`, `analytic-corpus-v3`, `wf-experiments/evals|experiments/*`,
+  `docs/research`) are **symlinks into `/mnt/e/ML/studio/Google-Deprem/`** — readable in place but
+  slow (drvfs); copy what a hot training loop needs into `~/ml/<project>/` first. `pytest` is pinned
+  to `tests/` for that reason — do not run it over the whole tree.
+- `~/Projects/<name>/` — every other project, e.g. `Bosphorify/presser` (github `bosphorify/presser`,
+  Node 24 + npm, `.env` present), `ClaudeSetup` (this config; `./setup.sh` installs it).
+- `~/ml/<project>/` — active training working sets only (see Storage policy).
+- `/mnt/e/ML/studio/` — the full Mac Studio data unpack; `/mnt/e/Archive/studio-2026-09/` — the archive.
+- Tools in WSL: `uv`, `python3` 3.12, Node LTS + `npm` and `gh`, `rclone` (all under `~/.local`),
+  `zstd`, `claude`. `sudo` needs the owner's password — ask before `apt`.
+
+## Opening a session on the box
+
+- `ssh cuda` lands in Windows cmd; type `wsl` for the Linux shell (user `barathanaslan`).
+  One-off commands: `cuda run '<bash>'`.
+- Claude Code on the box: `claude` inside WSL in the project directory (global config comes from
+  `~/Projects/ClaudeSetup` via `setup.sh`, same as on the Macs).
+- VS Code: Remote - WSL from Windows, or `code <dir>` from a WSL shell.
+- Long runs: inside `tmux` in WSL, or keep the ssh session open — WSL2 stops the distro seconds
+  after the last `wsl.exe` session exits and takes background jobs with it.
+
 ## Standard workflow for a training task
 
 1. `cuda status` — if off, `cuda on` (takes under a minute; tell the user if it fails —
