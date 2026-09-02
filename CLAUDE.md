@@ -21,7 +21,6 @@
 - Python via `uv`, one venv per project. Torch from the cu128 index (the 5090 is sm_120).
 - `gh`, `rclone`, `node`, `claude` are installed in WSL. `sudo` needs my password; ask before `apt`.
 - Stats for any tailnet machine: `tailmon json`.
-- Primary ML framework: PyTorch. Primary LLM API: Gemini.
 
 ## Rules on the box
 
