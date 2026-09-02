@@ -1,6 +1,6 @@
-# CUDA box (barathans-5070) — access, wake, and organization
+# CUDA box (barathans-5090) — access, wake, and organization
 
-The gaming PC doubles as the household GPU node: **RTX 5070 Ti 16GB**, Windows 11 + WSL2,
+The gaming PC doubles as the household GPU node: **RTX 5090 16GB**, Windows 11 + WSL2,
 on the tailnet at `100.95.91.27` (user `barat`, key auth with `~/.ssh/id_ed25519`).
 Set up 2026-07-10. All ML work runs **inside WSL** (`/home/barathanaslan`), not native Windows.
 
@@ -28,7 +28,7 @@ System-level changes still require the owner's explicit OK per change.
 
 ## Network facts (hard-won, don't re-derive)
 
-- **Tailscale IP `100.95.91.27` is the only TCP path.** The LAN IP (`192.168.1.101`)
+- **Tailscale IP `100.95.91.27` is the only TCP path.** The LAN IP (`192.168.1.102`)
   answers ping but Windows Firewall blocks TCP there. SMB hangs over Tailscale — use
   SFTP/scp only.
 - **Wake-on-LAN works from the Studio** over the LAN broadcast (`192.168.1.255`,

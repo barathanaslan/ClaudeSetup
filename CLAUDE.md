@@ -1,23 +1,42 @@
 # Global Preferences
 
-## Working Style
+## Working style
 
-- You tend to act as the architect: think through goals, trade-offs, and approach with the user here, rather than rushing to code. Use your judgment on how much of that a given task needs.
-- For large or multi-step implementation, lean on background `general-purpose` agents and keep this conversation strategic — a short summary of the result is enough here. For small or quick changes, just do them inline; don't stand up an agent for a one-line edit.
-- Agents are workforce, not authority: personally review everything an agent produces (read the diff, re-verify its claims) before accepting or pushing, and implement directly whenever your session context (user policies, safety rules, quality bar) is the thing that matters — the agent doesn't have it.
-- When you do delegate, a self-contained plan file in `docs/plans/` lets a fresh agent work from the plan alone — objective, files to touch, steps, acceptance criteria, and what not to do.
-- `docs/` is shared state between you and any worker agents. Read it at the start of a session if it exists, and keep it current when you finish meaningful work.
-- When context is getting long, summarize the state into `docs/` before it gets compacted away.
+- Think the approach through with me before large or multi-step changes; small changes, just do them.
+- Agents are fine for bulk work, but review what they produce yourself before accepting it.
+- Substantial projects keep a `docs/` folder (`overview.md`, `status.md`, `plans/`). Read it at the start of a session and keep `status.md` current. `/init-docs` creates one.
 
-## Environment
+## Machines (as of 2026-09)
 
-- Machine: Mac Studio, M3 Ultra chip, 96GB unified memory, macOS.
-- Never assume CUDA locally — use MPS for PyTorch, MLX when possible.
-- A remote CUDA box exists on the tailnet (RTX 5070 Ti, usually powered off): manage it only through `~/bin/cuda` (status/on/off/run) — see the `cuda-box` skill before touching it.
-- To read CPU/RAM/GPU usage of this or any tailnet machine, run `tailmon json` (or `curl http://<tailscale-ip>:7020/stats`) — never parse vm_stat/top/Activity Monitor by hand; macOS memory readings there are misleading.
-- Primary ML frameworks: PyTorch (with MPS), MLX.
-- Primary LLM API: Google Gemini.
+- **cuda box** — Windows 11 PC, Tailscale `barathans-5090` (100.95.91.27), LAN 192.168.1.102. RTX 5090 32 GB, Ryzen 9 7900, 64 GB RAM. All development and ML work happens in **WSL2 Ubuntu** (user `barathanaslan`); the Windows side (user `barat`) is only the host. Wake-on-LAN works (`cuda on` from a Mac). Usually on.
+- **MacBook** (`barathans-macbook-1`, 100.80.159.96) — the laptop. Works on the box over SSH: `ssh cuda` lands in Windows cmd, type `wsl`; `cuda run '<bash>'` runs a command inside WSL. Obsidian vault lives here.
+- **Mac mini** — arriving around 2026-09-22; becomes the main development machine, same SSH pattern as the MacBook. The box stays the GPU machine.
+- **Mac Studio** — sold 2026-09-02. Its archive is `E:\Archive\studio-2026-09\` on the box and the `studio-2026-09` folder on Google Drive; `contract/BOOTSTRAP.md` there explains how to restore onto a Mac.
 
-## Documentation
+## Layout on the box (WSL)
 
-- Prefer a `docs/` folder for persistent project context — `overview.md` (what it is, architecture) and `status.md` (current snapshot, updated in place). Create one when a project is substantial enough to benefit; skip it for throwaway or trivial work. `/init-docs` sets it up.
+- `~/Google-Deprem/` — the seismology project, code tree on ext4. Git repos live inside it (`FocoNet/` → github `seismicbundle/FocoNet`). Large data subtrees (`FocoNet/out/*`, `FocoNet/foconet-dataset`, `FocoNet/benchmarks`, `ProjectDocs/*`, `analytic-corpus/out/*`, `analytic-corpus-v3`, `wf-experiments/evals|experiments/*`, `docs/research`) are symlinks into `/mnt/e/ML/studio/Google-Deprem/…`.
+- `~/Projects/<name>/` — every other project (`Bosphorify/presser` → github `bosphorify/presser`, `ClaudeSetup`, …). Same paths as on the Macs.
+- `~/ml/<project>/` — active training working sets on ext4. Copy data in before a hot training loop; `/mnt/e` is slow drvfs and fine only for reading archives or writing results.
+- `E:\ML\` (`/mnt/e/ML`): `studio/` unpacked Mac Studio data, `sync/` scp staging from the Macs, `datasets/`, `outputs/`. `E:\Archive\`: cold storage. C: holds the WSL disk image, which grows and never shrinks, so bulk data goes to E:.
+
+## Tools on the box
+
+- Python: `uv` for venvs, one per project. Torch must come from `https://download.pytorch.org/whl/cu128` (the 5090 is sm_120). System `python3` is 3.12.
+- Node via nvm (LTS). `gh`, `rclone`, `zstd`, `tailscale`, `claude` are installed in WSL; `gh` and `rclone` live in `~/.local/bin`.
+- rclone remotes: `pc-archive` (this box over SFTP, for the Macs), `gdrive-rw` (Google Drive, read-write), `colabdrive` (Drive, read-only).
+- HuggingFace cache: `~/.cache/huggingface` in WSL.
+- `sudo` needs a password. Ask me before `apt` installs.
+- Machine stats for any tailnet machine: `tailmon json` or `http://<tailscale-ip>:7020/stats`.
+- Primary LLM API: Google Gemini. Primary ML framework: PyTorch (CUDA here, MPS on the Macs; MLX on the Macs when it fits).
+
+## Rules on the box
+
+- Never shut down or sleep the box unless I ask for it in the current conversation.
+- WSL stops when the last `wsl.exe` session exits, taking background jobs with it. Run long jobs inside `tmux`, or keep an SSH session open.
+- No changes to Windows services, registry, firewall or scheduled tasks without asking.
+
+## On a Mac
+
+- No local CUDA: PyTorch uses MPS, MLX when it fits. Anything that needs the GPU or the corpora runs on the box over SSH.
+- Manage the box only through `~/bin/cuda` (`status` / `on` / `run`); see the `cuda-box` skill.

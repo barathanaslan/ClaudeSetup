@@ -1,5 +1,5 @@
 #!/bin/bash
-# cuda — one command for the CUDA box (barathans-5070: RTX 5070 Ti 16GB, Windows 11 + WSL2).
+# cuda — one command for the CUDA box (barathans-5090: RTX 5090 32GB, Windows 11 + WSL2).
 # Usable by humans and any AI tool on this Mac. Full docs: ~/bin/CUDA-README.md
 #
 #   cuda status            up/down, GPU load, training procs, disks, uptime
@@ -15,7 +15,7 @@ set -u
 
 HOST="barat@100.95.91.27"        # Tailscale IP — the only routable TCP path (LAN TCP is firewalled)
 MAC="A0:AD:9F:D0:CC:2E"          # Ethernet NIC MAC, for wake-on-lan
-LAN_IP="192.168.1.101"           # LAN address — ICMP/broadcast reach it, TCP does not
+LAN_IP="192.168.1.102"           # LAN address — ICMP/broadcast reach it, TCP does not
 BCAST="192.168.1.255"
 SSHQ=(-o BatchMode=yes -o ConnectTimeout=8 -o ServerAliveInterval=30 -o ServerAliveCountMax=10)
 INVENTORY="$HOME/.claude/skills/cuda-box/references/INVENTORY.md"

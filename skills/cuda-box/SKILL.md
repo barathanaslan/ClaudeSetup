@@ -1,13 +1,13 @@
 ---
 name: cuda-box
-description: Access, wake, and use the user's CUDA GPU machine (gaming PC "barathans-5070", RTX 5070 Ti 16GB, Windows 11 + WSL2) on their tailnet. TRIGGER whenever the user mentions the cuda device/box, the tailnet GPU, the 5070, the gaming PC, waking or shutting down the PC, training on the GPU remotely, or where model weights/checkpoints live on that machine.
+description: Access, wake, and use the user's CUDA GPU machine (gaming PC "barathans-5090", RTX 5090 32GB, Windows 11 + WSL2) on their tailnet. TRIGGER whenever the user mentions the cuda device/box, the tailnet GPU, the 5090, the gaming PC, waking or shutting down the PC, training on the GPU remotely, or where model weights/checkpoints live on that machine.
 ---
 
 # The CUDA box
 
-One GPU machine exists: `barathans-5070` — RTX 5070 Ti (16GB VRAM), Windows 11 + WSL2 (Ubuntu),
+One GPU machine exists: `barathans-5090` — RTX 5090 (32GB VRAM), Windows 11 + WSL2 (Ubuntu),
 Tailscale IP **100.95.91.27**, user **barat**, passwordless key auth (`~/.ssh/id_ed25519`).
-It is usually **powered off** (idle wattage); the Mac Studio is the always-on machine.
+It is usually **on**; if not, `cuda on` wakes it (Fast Startup on Windows can break WoL after a full shutdown).
 
 ## Use the `cuda` helper — don't hand-roll ssh
 
@@ -32,7 +32,7 @@ so prefer `cuda run`. Full docs: `~/bin/CUDA-README.md`.
 3. Transfer files: `scp <file> "cuda:E:/ML/sync/<project>/..."` (staging on the E: data
    drive), then `cuda run 'cp /mnt/e/ML/sync/<project>/... ~/ml/<project>/...'`.
    scp cannot write into the WSL filesystem directly. Delete the staging copy after ingest.
-4. HuggingFace cache is shared at WSL `~/.cache/huggingface` (~34G) — models are probably
+4. HuggingFace cache is shared at WSL `~/.cache/huggingface` — models are probably
    already there; check before downloading.
 5. Long runs: launch with `nohup ... &` inside `cuda run`, poll with `cuda run 'tail ...'`.
 6. When done: **leave the box on** and tell the user it's running. See Power policy.
@@ -78,15 +78,12 @@ bulk data belongs. Keep C:/WSL lean:
 
 ## Hard rules
 
-- **Trendyol 2026 is FROZEN until the competition ends**: WSL `~/trendyol`, `~/ft`, `~/judge`,
-  venvs `~/vllmenv`/`~/ftenv`, everything loose in `C:\Users\barat` (parquets, train_*.py,
-  `trendyol_sync`), and the Mac-side `~/Projects/Trendyol2026/scripts/*` (gpu.sh, sync_to_gpu.sh,
-  orchestrate*.sh). Read them for reference; never modify, move, or "clean up".
 - **Never `cuda off` on your own initiative** — see Power policy above. The guard is a
   safety net, not permission.
-- **Only Tailscale TCP works.** LAN IP 192.168.1.101 pings but TCP is firewalled. SMB hangs;
+- **Only Tailscale TCP works.** LAN IP 192.168.1.102 pings but TCP is firewalled. SMB hangs;
   use scp/SFTP. Don't burn time re-deriving this.
 - Windows-side HF cache is empty by design — weights live in WSL.
+- WSL2 stops the distro seconds after the last `wsl.exe` session exits, killing detached jobs. Keep an ssh session open for the run, or use `tmux` inside a session that stays up.
 - **SSH sessions are FULL ADMINISTRATOR** (key in `administrators_authorized_keys`; verified
   2026-07-10 with the owner's blessing). Registry, services, schtasks all work remotely.
   With that power: never make system-level changes (services, HKLM, scheduled tasks,
