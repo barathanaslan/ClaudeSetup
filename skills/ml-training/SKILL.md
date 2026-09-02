@@ -77,7 +77,7 @@ with open('logs/metrics.csv', 'w', newline='') as f:
 
 - Print a summary of training config at the start (model, dataset size, learning rate, epochs, device, etc.)
 - Set random seeds for reproducibility
-- Use the correct device (MPS on Apple Silicon — see apple-ml skill)
+- Use the correct device (`cuda` on the box, `mps` on a Mac)
 
 ## 5. Data Split Hygiene
 - If the user doesn't specify splits, default to train/val/test (80/10/10 or similar)
