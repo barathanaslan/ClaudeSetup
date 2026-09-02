@@ -52,7 +52,7 @@ bulk data belongs. Keep C:/WSL lean:
   originals to `ModelArchive`/`E:\ML` and delete from WSL. Derived artifacts (quantized
   copies, venvs) get deleted, not archived — keep the recipe script that rebuilds them.
 - **Clean up staging**: copies in `C:\Users\barat\*_sync`, `C:\tmp`, and `E:\ML\sync` are
-  transient — delete them once ingested into WSL. (Trendyol-frozen files are exempt.)
+  transient — delete them once ingested into WSL.
 - The vhdx keeps its high-water mark: after big deletions inside WSL, C: only gets space
   back via compaction (`wsl --shutdown`, then `Optimize-VHD` on
   `C:\Users\Barat\AppData\Local\wsl\{...}\ext4.vhdx`). Needs an idle box and the user's

@@ -65,13 +65,10 @@ Two caveats away from the Studio:
 
 | Place | What |
 |---|---|
-| WSL `~/trendyol`, `~/ft`, `~/judge` | **Trendyol 2026 competition — FROZEN, do not touch** |
 | WSL `~/.cache/huggingface` | shared HF model cache — all projects reuse this |
-| WSL `~/vllmenv`, `~/ftenv` | venvs (vllm / fine-tuning) — Trendyol-era, leave alone |
 | WSL `~/ml/<project>/` | **convention for every NEW project** — ACTIVE working sets only |
 | `E:\ML\sync\<project>\` | scp staging for new projects (transient — delete after ingest) |
 | `E:\ML\datasets\`, `E:\ML\outputs\` | bulk session storage: dormant datasets, finished checkpoints/outputs |
-| `E:\Archive` | Studio offload target (see ARCHIVE-README.md) — incl. `ModelArchive/` (dormant weights) and `Trendyol2026/` (Windows-side Trendyol files, moved off C: 2026-08-08) |
 | `C:\Users\barat\<project>_sync` | DEPRECATED staging pattern (2026-08-08) — use `E:\ML\sync` instead |
 
 **Storage policy (owner, 2026-08-08):** C: is the system SSD and holds the WSL
@@ -92,11 +89,3 @@ Current snapshot: `~/.claude/skills/cuda-box/references/INVENTORY.md` (regen: `c
    `cuda off` is owner-initiated only (or pre-authorized per task); the guard refuses
    on GPU load, training procs, or an active login session. Minimize on/off churn.
 5. Cold artifacts → drop into Studio `~/Outbox` → they land in `E:\Archive`.
-
-## ⚠️ Trendyol 2026 (until the competition ends)
-
-`~/Projects/Trendyol2026` on the Mac has its own scripts (`gpu.sh`, `sync_to_gpu.sh`,
-`orchestrate*.sh`) that talk to this box directly. **Do not modify them, and do not
-move/rename anything they depend on** (everything in the table above marked frozen,
-plus the loose parquets/scripts in `C:\Users\barat`). The `cuda` command is additive
-and independent — both can coexist.
