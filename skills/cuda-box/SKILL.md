@@ -76,6 +76,18 @@ bulk data belongs. Keep C:/WSL lean:
 - The `cuda off` guard refuses on GPU load, WSL training processes, or an active login
   session; `--force` exists but only use it after the user says so.
 
+
+## Long jobs: WSL2 kills background work when the last session closes (learned 2026-09-02)
+
+`nohup setsid … &` inside `wsl -e bash` does NOT survive the ssh ending — WSL2 terminates the
+distro (and every process in it) a few seconds after the last `wsl.exe` session exits. A 33-unit
+extraction died after unit 1 this way. Keep a session attached for the whole run from the Mac:
+
+    nohup ssh -o ServerAliveInterval=30 cuda "wsl -e bash /path/job.sh" > ~/job.log 2>&1 < /dev/null &
+
+(This is what the `HOLDER_UP` / `sleep 100000` ssh processes seen on the Mac were for.) Poll with
+`cuda run 'tail …'` or the Mac-side log. Alternative: a Windows scheduled task running `wsl.exe`.
+
 ## Hard rules
 
 - **Trendyol 2026 is FROZEN until the competition ends**: WSL `~/trendyol`, `~/ft`, `~/judge`,
