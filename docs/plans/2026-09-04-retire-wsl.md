@@ -125,3 +125,20 @@ Addendum, same evening: the OpenSSH `DefaultShell` is set and verified (ssh land
 over ssh, a shebang script executed through an NTFS symlink fails with "bad interpreter:
 Permission denied", so `setup.sh` now copies the box-only helpers (`detach`) into `~/bin` instead
 of linking them. Re-run `./setup.sh` after editing them.
+
+## Addendum, late evening: the desktop app's sidebar
+
+The Claude desktop app does not scan `~/.claude/projects`. Its sidebar comes from its own index,
+`%APPDATA%\Claude\claude-code-sessions\<account>\<org>\local_<id>.json`, one tree per login, and
+only sessions started from the app were in it. The migrated transcripts were therefore invisible.
+Fixed by generating an entry for each of the 82 top-level transcripts in every account tree
+(`1dc35416/b4f988cc` = the Boğaziçi/Trace Lab login, `abdee200/3d161006` = gmail, plus two minor
+trees), repointing the ten dead WSL-remote entries at the local transcripts, and moving the eight
+`OneDrive\claude` sessions to where they belong (the game demo to `Projects\blue-ledger`, the PC
+and hardware chats to `C:\Claude`). Backup of the index before the change:
+`E:\Archive\wsl-home-staging-2026-09-04\claude-code-sessions.bak-*`.
+
+pyfk on Windows: MSVC has no C99 complex arithmetic, which the vendored Cython extension uses
+(`pyfk.utils.complex` shims over `complex.h`). Building as C++ removes most errors but not the
+`_Dcomplex` ones from that shim, so a real port is needed (std::complex via `libcpp.complex`, or
+compile with clang). Build Tools are installed; `cl.exe` 14.44 is present.
