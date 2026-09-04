@@ -119,3 +119,9 @@ Open at hand-over: the OpenSSH `DefaultShell` key (owner runs `set-ssh-shell.cmd
 `/login` on the native CLI to switch to the Trace Lab account (the copied credential file and the
 desktop app's account metadata disagree, so log in fresh); Build Tools for pyfk if the arm-3 corpus
 code is needed; on the Macs `cd ~/Projects/ClaudeSetup && git pull && ./setup.sh`.
+
+Addendum, same evening: the OpenSSH `DefaultShell` is set and verified (ssh lands in Git Bash at
+`~`; `cuda status/run/win` work from the Mac-side script). One Git Bash quirk found in the process:
+over ssh, a shebang script executed through an NTFS symlink fails with "bad interpreter:
+Permission denied", so `setup.sh` now copies the box-only helpers (`detach`) into `~/bin` instead
+of linking them. Re-run `./setup.sh` after editing them.

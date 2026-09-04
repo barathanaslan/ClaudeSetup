@@ -101,7 +101,11 @@ if [ "$ON_WINDOWS" = 1 ]; then
     for bin_file in "$SCRIPT_DIR/skills/cuda-box/box-bin"/*; do
         if [ -f "$bin_file" ]; then
             chmod +x "$bin_file" 2>/dev/null || true
-            link_item "$bin_file" "$HOME/bin/$(basename "$bin_file")"
+            # Copied, not linked: over ssh Git Bash refuses to exec a shebang script through an
+            # NTFS symlink ("bad interpreter: Permission denied"), while a real file is fine.
+            dest="$HOME/bin/$(basename "$bin_file")"
+            [ -L "$dest" ] && rm -f "$dest"
+            cp -f "$bin_file" "$dest" && chmod +x "$dest" && echo "  Copied: $dest"
         fi
     done
 fi
