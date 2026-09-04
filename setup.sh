@@ -4,6 +4,10 @@
 
 set -e
 
+# On Windows (Git Bash) make ln -s create real NTFS symlinks or fail loudly, never silent copies.
+# Needs Developer Mode (or an elevated shell).
+case "$(uname -s)" in MINGW*|MSYS*) export MSYS=winsymlinks:nativestrict; ON_WINDOWS=1;; *) ON_WINDOWS=0;; esac
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 BACKUP_DIR="$CLAUDE_DIR/backup-$(date +%Y%m%d-%H%M%S)"
@@ -91,6 +95,16 @@ for bin_file in "$SCRIPT_DIR/bin"/*; do
         link_item "$bin_file" "$HOME/bin/$bin_name"
     fi
 done
+
+# --- Box-only helpers (skills/cuda-box/box-bin) — Windows machines only ---
+if [ "$ON_WINDOWS" = 1 ]; then
+    for bin_file in "$SCRIPT_DIR/skills/cuda-box/box-bin"/*; do
+        if [ -f "$bin_file" ]; then
+            chmod +x "$bin_file" 2>/dev/null || true
+            link_item "$bin_file" "$HOME/bin/$(basename "$bin_file")"
+        fi
+    done
+fi
 
 # --- Prune orphaned symlinks pointing into this repo ---
 # Removes symlinks under ~/.claude whose target is inside $SCRIPT_DIR but

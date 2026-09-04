@@ -17,11 +17,11 @@ cd ~/Projects/ClaudeSetup
 
 - **CLAUDE.md** — working style, the machines, layout and tools on the cuda box.
 - **settings.json** — permissions mode, theme, effort level.
-- **skills/cuda-box** — the tailnet GPU box: `~/bin/cuda`, storage and power policy.
+- **skills/cuda-box** — the tailnet GPU box (native Windows): `~/bin/cuda`, `detach`, storage and power policy.
 - **skills/ml-training** — training standards: checkpoints, early stopping, metrics, logging.
 - **skills/skill-creator** — create, modify and benchmark skills.
 - **commands/init-docs** — `/init-docs` creates the `docs/` folder structure.
-- **bin/cuda**, **bin/CUDA-README.md** — the box helper and its docs.
+- **bin/cuda**, **bin/CUDA-README.md** — the box helper and its docs. `skills/cuda-box/box-bin/detach` is linked into `~/bin` on the box only.
 
 ## Updating
 

@@ -1,14 +1,16 @@
 #!/bin/bash
-# cuda — one command for the CUDA box (barathans-5090: RTX 5090 32GB, Windows 11 + WSL2).
+# cuda — one command for the CUDA box (barathans-5090: RTX 5090 32GB, native Windows 11, Git Bash shell).
 # Usable by humans and any AI tool on this Mac. Full docs: ~/bin/CUDA-README.md
 #
-#   cuda status            up/down, GPU load, training procs, disks, uptime
-#   cuda on                wake it (WoL magic packet; works from off AND sleep)
-#   cuda off [--force]     shut it down; refuses if busy/logged-in unless --force
-#   cuda sleep [--force]   suspend to RAM (S3) — wakes by any key or `cuda on`
-#   cuda run '<bash>'      run bash inside WSL (where all ML work lives), quoting-safe
-#   cuda win '<cmd>'       run a Windows cmd.exe command
-#   cuda ssh               interactive shell (lands in Windows cmd; type `wsl` for Linux)
+#   cuda status               up/down, GPU load, python procs, detached jobs, disks, uptime
+#   cuda on                   wake it (WoL magic packet; works from off AND sleep)
+#   cuda off [--force]        shut it down; refuses if busy/logged-in unless --force
+#   cuda sleep [--force]      suspend to RAM (S3) — wakes by any key or `cuda on`
+#   cuda run '<bash>'         run bash on the box (~ = C:\Users\Barat), quoting-safe
+#   cuda detach '<bash>' [n]  start a detached long job on the box (survives disconnect)
+#   cuda jobs                 list detached jobs on the box
+#   cuda win '<cmd>'          run a Windows cmd.exe command
+#   cuda ssh                  interactive bash shell on the box
 
 set -u
 
@@ -18,7 +20,7 @@ LAN_IP="192.168.1.102"           # LAN address — ICMP/broadcast reach it, TCP 
 BCAST="192.168.1.255"
 SSHQ=(-o BatchMode=yes -o ConnectTimeout=8 -o ServerAliveInterval=30 -o ServerAliveCountMax=10)
 
-filt() { grep -ivE "post-quantum|store now|need to be upgraded|openssh.com/pq|vulnerable to|screen size is bogus"; }
+filt() { grep -ivE "post-quantum|store now|need to be upgraded|openssh.com/pq|vulnerable to"; }
 
 is_up() { ssh -o BatchMode=yes -o ConnectTimeout=5 "$HOST" "echo up" >/dev/null 2>&1; }
 
@@ -37,16 +39,18 @@ for dest in (bcast, "255.255.255.255", lan):
 PY
 }
 
-wsl_run() {
+# The box's ssh login shell is Git Bash, so a remote command already runs under `bash -c`.
+# base64 transport keeps quoting exact no matter what the command contains.
+box_bash() {
   local b64
   b64=$(printf '%s' "$1" | base64 | tr -d '\n')
-  ssh "${SSHQ[@]}" "$HOST" "wsl bash -lc \"echo $b64 | base64 -d | bash\"" 2>&1 | filt
+  ssh "${SSHQ[@]}" "$HOST" "echo $b64 | base64 -d | bash" 2>&1 | filt
   return "${PIPESTATUS[0]}"
 }
 
-training_procs() {  # non-empty output = something ML-ish is running in WSL
-  wsl_run 'pgrep -af "python|torchrun|vllm|accelerate|deepspeed" | grep -vE "pgrep|unattended-upgrade"' 2>/dev/null | grep -v '^[[:space:]]*$'
-}
+# Non-empty output = something ML-ish is running (python/torchrun/accelerate/deepspeed).
+PY_PROCS='powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { \$_.Name -match \"^python|^torchrun|^accelerate|^deepspeed\" } | ForEach-Object { \"{0,7}  {1}\" -f \$_.ProcessId, \$_.CommandLine }"'
+python_procs() { box_bash "$PY_PROCS" 2>/dev/null | grep -v '^[[:space:]]*$'; }
 
 case "${1:-help}" in
 
@@ -56,9 +60,12 @@ case "${1:-help}" in
       exit 1
     fi
     echo "cuda box: UP  ($HOST)"
-    ssh "${SSHQ[@]}" "$HOST" 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader & powershell -NoProfile -Command "Write-Output (\"uptime: {0:N0} min\" -f ((Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalMinutes); Get-Volume | Where-Object DriveLetter | ForEach-Object { Write-Output (\"{0}: {1}G free / {2}G\" -f $_.DriveLetter, [math]::Round($_.SizeRemaining/1GB), [math]::Round($_.Size/1GB)) }"' 2>/dev/null | filt
-    echo "--- WSL ---"
-    wsl_run 'df -h / | tail -1 | awk "{print \"wsl disk: \" \$4 \" free of \" \$2}"; p=$(pgrep -af "python|torchrun|vllm|accelerate|deepspeed" | grep -vE "pgrep|unattended-upgrade"); if [ -n "$p" ]; then echo "TRAINING PROCS:"; echo "$p"; else echo "no training processes"; fi'
+    box_bash 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader
+powershell -NoProfile -Command "Write-Output (\"uptime: {0:N0} min\" -f ((Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalMinutes)"
+df -h /c /e | awk "NR>1 {print \$1 \"  \" \$4 \" free of \" \$2}"
+p=$('"$PY_PROCS"')
+if [ -n "$p" ]; then echo "PYTHON PROCS:"; echo "$p"; else echo "no python processes"; fi
+if command -v detach >/dev/null 2>&1; then echo "--- detached jobs ---"; detach list; fi'
     ;;
 
   on)
@@ -83,14 +90,14 @@ case "${1:-help}" in
     verb="shut down"; [ "$1" = "sleep" ] && verb="suspend"
     if ! is_up; then echo "already off / unreachable"; exit 0; fi
     if [ "${2:-}" != "--force" ]; then
-      util=$(ssh "${SSHQ[@]}" "$HOST" "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits" 2>/dev/null | tr -cd '0-9')
-      procs=$(training_procs || true)
-      sess=$(ssh "${SSHQ[@]}" "$HOST" "quser 2>nul" 2>/dev/null | grep -i " active " || true)
+      util=$(box_bash "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits" 2>/dev/null | tr -cd '0-9')
+      procs=$(python_procs || true)
+      sess=$(box_bash "quser 2>/dev/null" 2>/dev/null | grep -i " active " || true)
       if [ -n "$procs" ] || [ -n "$sess" ] || [ "${util:-0}" -ge 20 ] 2>/dev/null; then
         echo "REFUSING to $verb:"
         [ -n "$sess" ]  && { echo "  someone is logged in:"; echo "$sess"; }
         [ "${util:-0}" -ge 20 ] 2>/dev/null && echo "  GPU util ${util}%"
-        [ -n "$procs" ] && { echo "  training processes:"; echo "$procs"; }
+        [ -n "$procs" ] && { echo "  python processes:"; echo "$procs"; }
         echo "Use 'cuda $1 --force' only if the owner confirmed."
         exit 1
       fi
@@ -99,32 +106,40 @@ case "${1:-help}" in
       echo "suspending to RAM..."
       # .NET Suspend requests S3 specifically (the rundll32 variant hibernates
       # when hibernation is enabled — don't use it).
-      ssh "${SSHQ[@]}" "$HOST" 'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $false)"' 2>/dev/null | filt
+      box_bash 'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, \$false, \$false)"' 2>/dev/null
       echo "asleep. Wake: any key at the desk, or cuda on (WoL works from sleep)."
     else
       echo "shutting down..."
-      ssh "${SSHQ[@]}" "$HOST" "shutdown /s /t 5" 2>/dev/null | filt
+      # Git Bash would rewrite /s into a path; MSYS_NO_PATHCONV stops that for this one exec.
+      box_bash 'MSYS_NO_PATHCONV=1 shutdown /s /t 5' 2>/dev/null
       echo "shutdown issued. Wake later with: cuda on"
     fi
     ;;
 
   run)
     [ -n "${2:-}" ] || { echo "usage: cuda run '<bash command>'"; exit 2; }
-    wsl_run "$2"
+    box_bash "$2"
+    ;;
+
+  detach)
+    [ -n "${2:-}" ] || { echo "usage: cuda detach '<bash command>' [name]"; exit 2; }
+    box_bash "detach $(printf '%q' "$2") ${3:-}"
+    ;;
+
+  jobs)
+    box_bash 'detach list'
     ;;
 
   win)
     [ -n "${2:-}" ] || { echo "usage: cuda win '<windows command>'"; exit 2; }
-    ssh "${SSHQ[@]}" "$HOST" "$2" 2>&1 | filt
-    exit "${PIPESTATUS[0]}"
+    box_bash "MSYS_NO_PATHCONV=1 cmd.exe /c $(printf '%q' "$2")"
     ;;
 
   ssh)
     exec ssh -o ServerAliveInterval=30 "$HOST"
     ;;
 
-
   help|*)
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
     ;;
 esac

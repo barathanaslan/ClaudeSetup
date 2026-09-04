@@ -1,19 +1,22 @@
 # CUDA box (barathans-5090) — access and wake
 
-Windows 11 + WSL2 PC with an **RTX 5090 32GB**, on the tailnet at `100.95.91.27` (ssh user `barat`,
-key auth with `~/.ssh/id_ed25519`). All ML work runs inside WSL (Linux user `barathanaslan`), not
-native Windows.
+Windows 11 PC with an **RTX 5090 32GB**, on the tailnet at `100.95.91.27` (ssh user `barat`,
+key auth with `~/.ssh/id_ed25519`). Everything runs **natively on Windows**. The login shell,
+locally and over ssh, is Git Bash: `~` is `C:\Users\Barat`, and the Unix tools you expect are there.
+WSL is installed but unused; nothing of ours lives in it.
 
 ## One command for everything: `~/bin/cuda`
 
 ```
-cuda status            # up? GPU load? training running? disk space?
-cuda on                # wake from power-off or sleep (WoL magic packet), waits for boot
-cuda off [--force]     # shut down — refuses if GPU busy / logged in unless --force
-cuda sleep [--force]   # suspend to RAM — wakes by any key or `cuda on`
-cuda run '<bash>'      # run bash inside WSL, quoting-safe (base64 transport)
-cuda win '<cmd>'       # run a Windows cmd command
-cuda ssh               # interactive shell (Windows cmd; type `wsl` for Linux)
+cuda status               # up? GPU load? python procs? detached jobs? disk space?
+cuda on                   # wake from power-off or sleep (WoL magic packet), waits for boot
+cuda off [--force]        # shut down — refuses if GPU busy / logged in unless --force
+cuda sleep [--force]      # suspend to RAM — wakes by any key or `cuda on`
+cuda run '<bash>'         # run bash on the box, quoting-safe (base64 transport)
+cuda detach '<bash>' [n]  # start a long job that outlives the ssh session; log ~/jobs/<n>.log
+cuda jobs                 # list detached jobs
+cuda win '<cmd>'          # run a Windows cmd command
+cuda ssh                  # interactive bash on the box
 ```
 
 Also: `ssh cuda` works (alias in `~/.ssh/config`).
@@ -45,6 +48,7 @@ require the owner's explicit OK per change.
 | NIC driver | Wake on Magic Packet + Shutdown Wake-On-Lan = Enabled | Realtek 2.5GbE advanced properties |
 | Tailscale | Unattended mode ON (connects pre-login) | `tailscale set --unattended=true` (as barat over ssh) |
 | Services | sshd + Tailscale StartType = Automatic | already set |
+| OpenSSH | `DefaultShell` = `C:\Program Files\Git\bin\bash.exe`, `DefaultShellCommandOption` = `-c` (HKLM\SOFTWARE\OpenSSH) | set 2026-09-04; `cuda` assumes it |
 
 If `cuda on` ever stops working after a BIOS update/CMOS reset or a big Windows update,
 re-check this table top to bottom — something reverted.
@@ -53,13 +57,18 @@ re-check this table top to bottom — something reverted.
 
 The script is distributed via the ClaudeSetup repo (`./setup.sh` links it into `~/bin`).
 The PC only trusts keys in its `authorized_keys`: either reuse the existing `~/.ssh/id_ed25519`
-pair or append the new machine's pubkey to `C:\Users\barat\.ssh\authorized_keys` from a machine
+pair or append the new machine's pubkey to `C:\Users\Barat\.ssh\authorized_keys` from a machine
 that already has access.
 
 ## Conventions
 
-- Work in WSL under `~/ml/<project>/` for active training sets; bulk data on `E:`.
-- Stage transfers through `scp <file> "cuda:E:/ML/sync/<project>/..."`, then
-  `cuda run 'cp /mnt/e/ML/sync/... ~/ml/<project>/...'` (scp can't write into WSL directly).
-  Delete the staging copy after ingest.
+- Same layout as the Mac: `~/Google-Deprem`, `~/Projects/<name>`. `~/ml` → `E:\ML`, the one data
+  root. No staging: `scp <file> cuda:ml/datasets/<set>/` or `cuda:Google-Deprem/...` lands where it
+  belongs.
+- Long jobs: `cuda detach '<cmd>' <name>`; watch with `cuda run 'detach tail <name>'`. Anything
+  started in the foreground of an ssh session dies when the session does.
+- Git Bash rewrites arguments that look like POSIX paths when it calls Windows programs
+  (`tasklist /FI` becomes a path). Use `//FI` or prefix `MSYS_NO_PATHCONV=1`.
 - When a job finishes, **leave the box on**. Power and storage policy: the cuda-box skill.
+- Rollback of the September 2026 WSL retirement: `E:\Archive\wsl-ubuntu-2026-09-04.tar`
+  (`wsl --import Ubuntu <dir> <tar>` restores the old distro in full).
