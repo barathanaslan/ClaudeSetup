@@ -76,3 +76,46 @@ Google-Deprem docs/ProjectDocs (not a repo), Bosphorify, MuseTest, all Claude se
 - blue-ledger gets a private GitHub remote; pyfk-opt pending the owner's answer.
 - Stray staging files in `C:\Users\Barat` go to `E:\ML\archive\windows-home-leftovers-2026\`,
   nothing deleted.
+
+## Status 2026-09-04, evening: done
+
+- Export: `E:\Archive\wsl-ubuntu-2026-09-04.tar`, 250.9 GB, 923,193 entries, 20 min. Rollback:
+  `wsl --import Ubuntu <dir> <tar>`.
+- Extraction natively from the tar (bsdtar; entries carry a `./` prefix, so strip = depth + 1):
+  code trees 20 s, 184 GB of ml in under 5 min. Verified file by file: 296,392 regular files
+  present with identical sizes (the only difference was `pyfk-opt/.git/config`, changed on
+  purpose when its remote was recreated). 160,718 files excluded by policy (.venv, node_modules,
+  __pycache__, .pytest_cache, the Linux rclone binary) remain in the tar.
+- Symlinks: 239 in the tar; 231 recreated as NTFS symlinks (230 under ProjectDocs, most in
+  `kahramanmaras-study-dataset/`, plus `FocoNet/foconet-dataset`); the 8 skipped were
+  ClaudeSetup's own links and codex internals. `~/ml` is a junction to `E:\ML`.
+- Claude sessions: 828 transcripts (525 Google-Deprem, 293 presser, 6 BarathanAslan,
+  4 trace-website) re-keyed to `C--Users-Barat-...`; WSL-era `cwd` fields rewritten; a
+  973-turn, 19.5 MB session resumed headlessly on the native CLI and answered.
+- Dotfiles: kaggle, rclone (incl. gdrive-rw), gh, ssh keys, seisbench, pyrocko, muse, uv config,
+  bash history merged. `.codex` and `.copilot` from WSL preserved beside the Windows ones as
+  `~/.codex-from-wsl`, `~/.copilot-from-wsl`. Staged copy kept at
+  `E:\Archive\wsl-home-staging-2026-09-04`.
+- Repos: git state identical to WSL (FocoNet untracked experiments dir, blue-ledger
+  `docs/research.md`, presser's three modified files). pyfk-opt recreated as a private repo with
+  main/cpu/cuda. blue-ledger private repo created.
+- Environments: FocoNet venv with torch 2.11.0+cu128 sees the RTX 5090 as sm_120; 428 tests pass.
+  Remaining failures are the 10 tests that import `pyfk`: the vendored fork ships Cython
+  extensions built only for Linux and macOS, so on Windows it needs MSVC Build Tools once
+  (`winget install Microsoft.VisualStudio.2022.BuildTools`, C++ workload; admin prompt).
+  blue-ledger builds and its dev server is reachable at `localhost:5173`, the blocker that
+  survived every WSL session. presser installs and type-checks (two pre-existing TS errors).
+- Two Windows portability fixes left uncommitted in FocoNet for review: `webapp/store.py` uses
+  `msvcrt` locking where `fcntl` does not exist, and writes the provenance path in POSIX form.
+  `PYTHONUTF8=1` is set as a user env var (Python on Windows otherwise reads text as cp1252).
+- Windows: WSL distro unregistered (C: 499 GB -> 201 GB used), `E:\wsl-swap.vhdx` deleted,
+  `.wslconfig` shrunk to 8 GB/4 GB, Remote-WSL extension and its cache removed, Terminal
+  defaults to Git Bash and the Ubuntu profile is gone, stray home files archived under
+  `E:\ML\archive\windows-home-leftovers-2026`.
+- Docs updated: Google-Deprem `docs/status.md` and three plans, blue-ledger overview/architecture/
+  status, presser status and checklist, `E:\ML\README.md`.
+
+Open at hand-over: the OpenSSH `DefaultShell` key (owner runs `set-ssh-shell.cmd` elevated);
+`/login` on the native CLI to switch to the Trace Lab account (the copied credential file and the
+desktop app's account metadata disagree, so log in fresh); Build Tools for pyfk if the arm-3 corpus
+code is needed; on the Macs `cd ~/Projects/ClaudeSetup && git pull && ./setup.sh`.

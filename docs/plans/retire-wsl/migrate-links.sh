@@ -1,20 +1,22 @@
 #!/bin/bash
-# Recreate the WSL symlinks as NTFS symlinks (needs Developer Mode). Git Bash on the box.
+# Recreate every WSL symlink as an NTFS symlink, data-driven from symlinks.tsv (link<TAB>target),
+# which was generated from the tar listing. Needs Developer Mode. Git Bash on the box.
+# Skips ~/.claude/* and ~/.codex/* (ClaudeSetup's setup.sh and the Windows Codex own those).
 set -uo pipefail
 export MSYS=winsymlinks:nativestrict
-H=/c/Users/Barat; GD="$H/Google-Deprem"; ST=/e/ML/studio/Google-Deprem/ProjectDocs
-mk() { # mk <link> <target>
-  local l="$1" t="$2"
-  [ -e "$t" ] || { echo "SKIP (target missing): $l -> $t"; return; }
-  [ -L "$l" ] && rm -f "$l"
-  [ -e "$l" ] && { echo "SKIP (real file/dir exists at link path): $l"; return; }
-  ln -s "$t" "$l" && echo "ok: $l -> $t" || echo "FAILED: $l -> $t (Developer Mode on?)"
-}
-mk "$GD/FocoNet/foconet-dataset" "$H/ml/datasets/foconet-dataset"
-mkdir -p "$GD/ProjectDocs"
-for name in "Meetings" "[EXT] Kandilli Observatory __ Turkey AI Earthquake Detection - Funding Proposal_Locked Version (5).pdf" \
-  "Foconet.pdf" "kahramanmaras-study" "ross2018.pdf" "ProvidedFM" "9pwy7rgzkt-2" \
-  "2025jh000879-sup-0001-supporting information si-s01.pdf" "notes.md" "phasenet.pdf" "meier-polarity.pdf" \
-  "Kandilli istasyonlar.rtf" "An Introduction to Seismology, Earthquakes, and Earth Structure.pdf"; do
-  mk "$GD/ProjectDocs/$name" "$ST/$name"
-done
+H=/c/Users/Barat
+TSV="${1:-$(dirname "$0")/symlinks.tsv}"
+ok=0; skip=0; fail=0
+while IFS=$'\t' read -r link target; do
+  [ -n "$link" ] || continue
+  case "$link" in .claude/*|.codex/*) skip=$((skip+1)); continue;; esac
+  t="$target"
+  t="${t/#\/mnt\/e\//\/e\/}"; t="${t/#\/mnt\/c\//\/c\/}"; t="${t/#\/home\/barathanaslan\//$H/}"
+  l="$H/$link"
+  if [ ! -e "$t" ]; then echo "SKIP target missing: $link -> $t"; skip=$((skip+1)); continue; fi
+  if [ -L "$l" ]; then rm -f "$l"; fi
+  if [ -e "$l" ]; then echo "SKIP real file/dir at link path: $link"; skip=$((skip+1)); continue; fi
+  mkdir -p "$(dirname "$l")"
+  if ln -s "$t" "$l" 2>/dev/null; then ok=$((ok+1)); else echo "FAILED: $link -> $t"; fail=$((fail+1)); fi
+done < "$TSV"
+echo "links created=$ok skipped=$skip failed=$fail"
