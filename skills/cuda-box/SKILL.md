@@ -47,6 +47,14 @@ Full docs: `~/bin/CUDA-README.md`.
   Prefer `//flag` or `MSYS_NO_PATHCONV=1 <cmd>` when calling cmd-style tools such as `tasklist /FI`.
   PowerShell sent to the box must be ASCII-only (PS 5.1 mangles BOM-less UTF-8 literals).
 
+## Seeing the screen (fallback, owner-driven)
+
+TightVNC runs on the box as service `tvnserver`, port 5900, firewall rule `VNC over Tailscale
+only` (100.64.0.0/10), VNC authentication on. From a Mac, `/Applications/CUDA Connection.app`
+opens macOS Screen Sharing with the password from `~/.config/cuda-vnc/password`. It mirrors the
+console. RDP is not used: the Windows account is Microsoft-account-linked and RDP from a Mac
+cannot authenticate against it — don't propose it.
+
 ## Storage policy
 
 - C: holds Windows, tools and code. Bulk data lives under `E:\ML`.
