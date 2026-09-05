@@ -17,8 +17,8 @@ and the data all work natively on Windows, so the Linux layer bought nothing.
 - `detach` replaces tmux for long jobs (WMI-created processes survive ssh disconnect — verified
   2026-09-04: WMI child alive after disconnect, `Start-Process` child killed).
 - WSL stays installed but empty: the old distro is exported in full to
-  `E:\Archive\wsl-ubuntu-2026-09-04.tar`, unregistered, and a fresh small Ubuntu registered in
-  its place for any future task that truly needs Linux.
+  `E:\Archive\wsl-ubuntu-2026-09-04.tar` and unregistered. No distro is registered; if a task
+  ever truly needs Linux, `wsl --install -d Ubuntu` on demand.
 
 ## Inventory at start (2026-09-04)
 
@@ -66,7 +66,7 @@ Google-Deprem docs/ProjectDocs (not a repo), Bosphorify, MuseTest, all Claude se
     Google-Deprem docs, blue-ledger docs, Terminal default profile, Remote-WSL extension.
     Macs: `git pull && ./setup.sh`.
 11. Retire: `wsl --unregister Ubuntu` (frees ~318 GB on C:), delete `E:\wsl-swap.vhdx`,
-    shrink `.wslconfig`, `wsl --install -d Ubuntu` fresh. Keep the tar.
+    shrink `.wslconfig`. No fresh distro (install on demand). Keep the tar.
 
 ## Decisions taken with the owner
 
