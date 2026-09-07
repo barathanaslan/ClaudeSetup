@@ -47,6 +47,16 @@ Full docs: `~/bin/CUDA-README.md`.
   Prefer `//flag` or `MSYS_NO_PATHCONV=1 <cmd>` when calling cmd-style tools such as `tasklist /FI`.
   PowerShell sent to the box must be ASCII-only (PS 5.1 mangles BOM-less UTF-8 literals).
 
+## VS Code from a Mac (Remote-SSH)
+
+`/Applications/CUDA VSCode.app` opens `vscode-remote://ssh-remote+cuda/C:/Users/Barat/Projects`.
+Two things make it work and both are already in place: VS Code setting
+`"remote.SSH.remotePlatform": {"cuda": "windows"}`, and `~/bin/uname.cmd` on the box (installed
+by `setup.sh` from `box-bin/`). Remote-SSH probes `uname -rsv` and only treats msys/cygwin/windows32
+as Windows; Git's `uname.exe` answers `MINGW64_NT`, which it does not recognise, and the connection
+then hangs until timeout. The `.cmd` shim is seen by PowerShell/cmd only — bash never resolves
+`.cmd`, so `uname` in Git Bash is unchanged. Do not "fix" it by switching the ssh shell to PowerShell.
+
 ## Seeing the screen (fallback, owner-driven)
 
 TightVNC runs on the box as service `tvnserver`, port 5900, firewall rule `VNC over Tailscale
